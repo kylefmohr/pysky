@@ -1,5 +1,5 @@
 # pysky
-A Bluesky API library focused on higher-level database-backed features
+A Bluesky API library focused on higher-level database-backed quality of life features
 
 ## Features:
 
