@@ -35,3 +35,4 @@ def get_db_sqlite():
 
 
 db = get_db_postgresql() or get_db_sqlite()
+db.is_postgresql = isinstance(db, PostgresqlExtDatabase)

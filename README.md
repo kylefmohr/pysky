@@ -1,20 +1,24 @@
 # pysky
 A Bluesky API library with database backing that enables some quality of life features:
 
-* Automatic session caching/refreshing.
-* Cursor management - Cache the last cursor returned from an endpoint that returns one (such as `chat.bsky.convo.getLog`) and automatically pass it to the next call to that API, ensuring that all objects are retuened and that each object is only returned once.
-* Pagination - Receive all pages of results with one call.
-* Logging - Metadata for all API calls and responses (including exceptions) are stored in the database.
-* Cached user profiles for local DID/handle lookups.
+* Automatic session caching/refreshing
+* Cursor management - cache the last cursor returned from an endpoint that returns one (such as `chat.bsky.convo.getLog`) and automatically pass it to the next call to that API, ensuring that all objects are retuened and that each object is only returned once
+* Pagination - receive all pages of results with one call
+* Logging - metadata for all API calls and responses (including exceptions) are stored in the database
+* Cached user profiles for local DID/handle lookups
 
-## Setup
+## Installation / Setup
 
-1. Set up a database connection. PostgreSQL and SQLite work, but mysql/mariadb should also work because they're supported by the Peewee ORM.
+1. Clone the repo, install the packages in requirements.txt.
+
+2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
 
     * PostgreSQL configuration: If the official PostgreSQL environment variables are populated: `PGUSER`, `PGHOST`, `PGDATABASE`, `PGPASSWORD` (and optionally `PGPORT`) then a PostgreSQL database connection will be used.
     * SQLite configuration: If the PostgreSQL environment variables are not populated, the a SQLite database will be created with the filename specified in `PYSKY_SQLITE_FILENAME`, otherwise "pysky.db" in the current directory will be created.
 
-2. Create database tables: run `pysky/bin/create_tables.py`
+3. Create database tables: run `./pysky/bin/create_tables.py`.
+
+4. Set authentication environment variables for username and app password: `BSKY_AUTH_USERNAME`, `BSKY_AUTH_PASSWORD`.
 
 ## Using pysky
 
@@ -98,6 +102,32 @@ response_keys      | error,message
 ```
 
 Successful API calls also write rows to this table. Note that this library only appends to this table, so be mindful of archiving it to keep it from growing too large.
+
+## Cursor Management
+
+Using `chat.bsky.convo.getLog` as an example, here's what happens with calls to endpoints that return a cursor.
+
+The BskyClient class method that calls this endpoint uses the `@process_cursor` decorator.
+
+```python
+@process_cursor
+def get_convo_logs(
+    self,
+    endpoint="xrpc/chat.bsky.convo.getLog",
+    cursor=ZERO_CURSOR,
+    collection_attr="logs",
+    paginate=True,
+):
+    # usage notes: https://github.com/bluesky-social/atproto/issues/2760
+    return self.get(hostname="api.bsky.chat", endpoint=endpoint, params={"cursor": cursor})
+```
+
+Before the API call is made, the most recent row in bsky_api_cursor for this endpoint is selected. If one is found, it's automatically added to the parameters passed to the call. If one is not found, the value of the "[zero cursor](https://github.com/bluesky-social/atproto/issues/2760#issuecomment-2316325455)" is used.
+
+After the API call gets a successful response, the decorator code saves a row to the table with the new value of the cursor, unless the cursor value has not changes.
+
+The response attribute name for the list of objects returned, in this case "logs", is used by the decorator to collect the objects across multiple pages, if necessary.
+
 
 
 ## Features:
