@@ -18,7 +18,7 @@ A Bluesky API library with database backing that enables some quality of life fe
 
 3. Create database tables: run `./pysky/bin/create_tables.py`.
 
-4. Set authentication environment variables for username and app password: `BSKY_AUTH_USERNAME`, `BSKY_AUTH_PASSWORD`.
+4. (Optional) Set authentication environment variables for username and app password: `BSKY_AUTH_USERNAME`, `BSKY_AUTH_PASSWORD`. If only public endpoints are going to be accessed, these aren't needed.
 
 ## Basic Usage
 
@@ -30,27 +30,27 @@ In [2]: # create a session
    ...: 
 
 In [3]: profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
-                           params={"actor": "did:plc:5euo5vsiaqnxplnyug3k3art"})
+                           params={"actor": "did:plc:zcmchxw2gxlbincrchpdjopq"})
 
 In [4]: profile.handle
-Out[4]: 'tfederman.bsky.social'
+Out[4]: 'craigweekend.bsky.social'
 
 In [5]: profile.postsCount
-Out[5]: 88
+Out[5]: 104
 
 In [6]: # there's also a wrapper function for this call, but I haven't created many of these
-   ...: profile = bsky.get_profile("did:plc:5euo5vsiaqnxplnyug3k3art")
+   ...: profile = bsky.get_profile("did:plc:zcmchxw2gxlbincrchpdjopq")
    ...: 
 
 In [7]: profile.displayName
-Out[7]: 'Todd'
+Out[7]: 'It's The Weekend 😌'
 ```
 
 This library is fairly minimalist and expects the user to refer to the [official API reference](https://docs.bsky.app/docs/category/http-reference) for endpoint and parameter names. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
 
 The library handles passing the values provided in `params` as a query string for GET requests and as a json body for POST requests. Binary data (e.g. image uploads) should be passed as the `data` argument to `BskyClient.post`.
 
-A `hostname` argument to `bsky.get` and `bsky.post` must be provided when the default value of `bsky.social` is not appropriate.
+A `hostname` argument to `bsky.get()` and `bsky.post()` must be provided when the default value of `public.api.bsky.app` is not appropriate.
 
 Refer to the source of the `call` method to see other arguments and behaviors. https://github.com/tfederman/pysky/blob/ea359c7940414ab95d6dd14e1bfd4f1c0dfcf123/pysky/client.py#L166-L177
 
@@ -60,7 +60,7 @@ Behind the scenes, the BskyClient constructor checks the database for the most r
 
 If a session is found in the database, the Bluesky API is not called to establish a new session. If on the first (or any subsequent) use of this session the API responds with an `ExpiredToken` error, a new session is established and saved to bsky_session. The API call is automatically repeated with the new token.
 
-You can also call `bsky.post` for endpoints that require it. This code will create a post from your account:
+In addition to `bsky.get()` you can also call `bsky.post()` for endpoints that require it. This code will create a post from your account:
 
 ```python
 from datetime import datetime, timezone
