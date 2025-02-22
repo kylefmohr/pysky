@@ -14,13 +14,13 @@ A Bluesky API library with database backing that enables some quality of life fe
 2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
 
     * PostgreSQL configuration: If the official PostgreSQL environment variables are populated: `PGUSER`, `PGHOST`, `PGDATABASE`, `PGPASSWORD` (and optionally `PGPORT`) then a PostgreSQL database connection will be used.
-    * SQLite configuration: If the PostgreSQL environment variables are not populated, the a SQLite database will be created with the filename specified in `PYSKY_SQLITE_FILENAME`, otherwise "pysky.db" in the current directory will be created.
+    * SQLite configuration: If the PostgreSQL environment variables are not populated, the a SQLite database will be created with the filename specified in `PYSKY_SQLITE_FILENAME`, otherwise ":memory:" will be used, creating a non-persisted in-memory database.
 
 3. Create database tables: run `./pysky/bin/create_tables.py`.
 
 4. Set authentication environment variables for username and app password: `BSKY_AUTH_USERNAME`, `BSKY_AUTH_PASSWORD`.
 
-## Using pysky
+## Basic Usage
 
 ```python
 In [1]: from pysky.client import BskyClient
