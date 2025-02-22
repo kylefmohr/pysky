@@ -1,8 +1,8 @@
 # pysky
-A Bluesky API library with database backing that allows some quality of life features:
+A Bluesky API library with database backing that enables some quality of life features:
 
 * Automatic session caching/refreshing.
-* Cursor management - Cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are retuened and that each object is only returned once.
+* Cursor management - Cache the last cursor returned from an endpoint that returns one (such as `chat.bsky.convo.getLog`) and automatically pass it to the next call to that API, ensuring that all objects are retuened and that each object is only returned once.
 * Pagination - Receive all pages of results with one call.
 * Logging - Metadata for all API calls and responses (including exceptions) are stored in the database.
 * Cached user profiles for local DID/handle lookups.
@@ -11,8 +11,8 @@ A Bluesky API library with database backing that allows some quality of life fea
 
 1. Set up a database connection. PostgreSQL and SQLite work, but mysql/mariadb should also work because they're supported by the Peewee ORM.
 
-    * PostgreSQL configuration: If the official PostgreSQL environment variables are populated: PGUSER, PGHOST, PGDATABASE, PGPASSWORD (and optionally PGPORT) then a PostgreSQL database connection will be used.
-    * SQLite configuration: If the PostgreSQL environment variables are not populated, the a SQLite database will be created with the filename specified in PYSKY_SQLITE_FILENAME, otherwise "pysky.db" in the current directory will be created.
+    * PostgreSQL configuration: If the official PostgreSQL environment variables are populated: `PGUSER`, `PGHOST`, `PGDATABASE`, `PGPASSWORD` (and optionally `PGPORT`) then a PostgreSQL database connection will be used.
+    * SQLite configuration: If the PostgreSQL environment variables are not populated, the a SQLite database will be created with the filename specified in `PYSKY_SQLITE_FILENAME`, otherwise "pysky.db" in the current directory will be created.
 
 2. Create database tables: run `pysky/bin/create_tables.py`
 
@@ -49,6 +49,8 @@ If a session is found in the database, the Bluesky API is not called to establis
 You can also call bsky.post for endpoints that require it. This code will create a post from your account:
 
 ```python
+from datetime import datetime, timezone
+
 params = {
     "repo": "did:plc:5euo5vsiaqnxplnyug3k3art",
     "collection": "app.bsky.feed.post",
@@ -62,14 +64,44 @@ params = {
 response = bsky.post(endpoint="xrpc/com.atproto.repo.createRecord", params=params)
 ```
 
+## Error Logging
+
+
+```python
+In [15]: response = bsky.get(endpoint="xrpc/app.bsky.feed.searchPosts", params={"q": "", "mentions": "handle"})
+InvalidRequest - for more details run the query: SELECT * FROM api_call_log WHERE id=127425;
+---------------------------------------------------------------------------
+Exception                                 Traceback (most recent call last)
+Cell In[15], line 1
+----> 1 response = bsky.get(endpoint="xrpc/app.bsky.feed.searchPosts", params={"q": "", "mentions": "handle"})
+...
+```
+
+Note the log message indicating the query to run in order to see more details on the error.
+
+```
+stroma=# SELECT * FROM api_call_log WHERE id=127425;
+-[ RECORD 1 ]------+----------------------------------------------------------------------------------
+id                 | 127425
+timestamp          | 2025-02-21 19:45:28.707427-05
+hostname           | bsky.social
+endpoint           | xrpc/app.bsky.feed.searchPosts
+cursor_passed      |
+cursor_received    |
+method             | get
+http_status_code   | 400
+params             | {"q": "", "mentions": "handle"}
+exception_class    | InvalidRequest
+exception_text     | Error: Params must have the property "q"
+exception_response | {"error":"InvalidRequest","message":"Error: Params must have the property \"q\""}
+response_keys      | error,message
+```
+
+Successful API calls also write rows to this table. Note that this library only appends to this table, so be mindful of archiving it to keep it from growing too large.
+
+
 ## Features:
 
-### Database logging of all API calls, used for:
-   
-   * session caching across processes
-   * user did/handle caching
    * throttling / rate limit management
-   * cursor management (remember where you left off fetching data from a cursor-managed endpoint in prior sessions)
    * alerting through Bluesky messages (throttled to prevent flooding)
 
-Database access through peewee ORM, tested with PostgreSQL and SQLite.
