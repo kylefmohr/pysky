@@ -47,6 +47,8 @@ class BskyUserProfile(BaseModel):
 
     @staticmethod
     def get_or_create_from_api(actor, bsky):
+        """Either a user handle or DID can be passed to this method. Handle
+        should not include the @ symbol."""
         try:
             if actor.startswith("did:"):
                 return BskyUserProfile.get(BskyUserProfile.did == actor)

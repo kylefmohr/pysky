@@ -174,8 +174,13 @@ The third call returns no items because no more data has been created since the 
 
 In order to retrieve the items again, the rows in the `bsky_api_cursor` table for this endpoint would need to be deleted.
 
+## User Management
+
+User DID/handle/display name will be saved to the bsky_user_profile table if looked up through this method: `pysky.models.BskyUserProfile.get_or_create_from_api(actor, bsky)`
+
+Note that this method currently does not allow for updating rows in this table, so changes to a user's handle or display name made after being cached here will not be seen. To always get the live profile object, call `BskyClient.get_profile(actor)`.
+
 ## Features:
 
    * throttling / rate limit management
    * alerting through Bluesky messages (throttled to prevent flooding)
-
