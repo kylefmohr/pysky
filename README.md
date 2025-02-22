@@ -1,6 +1,11 @@
 # pysky
-A Bluesky API library focused on higher-level database-backed quality of life features
+A Bluesky API library with database backing that allows some quality of life features:
 
+* Automatic session caching/refreshing.
+* Cursor management - Cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are retuened and that each object is only returned once.
+* Pagination - Receive all pages of results with one call.
+* Logging - Metadata for all API calls and responses (including exceptions) are stored in the database.
+* Cached user profiles for local DID/handle lookups.
 
 ## Setup
 
@@ -33,8 +38,8 @@ In [6]: # there's also a wrapper function for this call, but I haven't created m
    ...: profile = bsky.get_profile("did:plc:5euo5vsiaqnxplnyug3k3art")
    ...: 
 
-In [6]: profile.displayName
-Out[6]: 'Todd'
+In [7]: profile.displayName
+Out[7]: 'Todd'
 ```
 
 Behind the scenes, the BskyClient constructor checks the database for the most recent cached session, an accessJwt/refreshJwt pair serialized to the table bsky_session. If none exist, a session is created and serialized to the table.
@@ -43,7 +48,7 @@ If a session is found in the database, the Bluesky API is not called to establis
 
 You can also call bsky.post for endpoints that require it. This code will create a post from your account:
 
-```
+```python
 params = {
     "repo": "did:plc:5euo5vsiaqnxplnyug3k3art",
     "collection": "app.bsky.feed.post",
