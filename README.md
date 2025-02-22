@@ -46,11 +46,21 @@ In [7]: profile.displayName
 Out[7]: 'Todd'
 ```
 
+This library is fairly minimalist and expects the user to refer to the [official API reference](https://docs.bsky.app/docs/category/http-reference) for endpoint and parameter names. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
+
+The library handles passing the values provided in `params` as a query string for GET requests and as a json body for POST requests. Binary data (e.g. image uploads) should be passed as the `data` argument to `BskyClient.post`.
+
+A `hostname` argument to `bsky.get` and `bsky.post` must be provided when the default value of `bsky.social` is not appropriate.
+
+Refer to the source of the `call` method to see other arguments and behaviors. https://github.com/tfederman/pysky/blob/ea359c7940414ab95d6dd14e1bfd4f1c0dfcf123/pysky/client.py#L166-L177
+
+### Session Management
+
 Behind the scenes, the BskyClient constructor checks the database for the most recent cached session, an accessJwt/refreshJwt pair serialized to the table bsky_session. If none exist, a session is created and serialized to the table.
 
 If a session is found in the database, the Bluesky API is not called to establish a new session. If on the first (or any subsequent) use of this session the API responds with an `ExpiredToken` error, a new session is established and saved to bsky_session. The API call is automatically repeated with the new token.
 
-You can also call bsky.post for endpoints that require it. This code will create a post from your account:
+You can also call `bsky.post` for endpoints that require it. This code will create a post from your account:
 
 ```python
 from datetime import datetime, timezone
@@ -101,11 +111,11 @@ exception_response | {"error":"InvalidRequest","message":"Error: Params must hav
 response_keys      | error,message
 ```
 
-Successful API calls also write rows to this table. Note that this library only appends to this table, so be mindful of archiving it to keep it from growing too large.
+Successful API calls also write rows to this table. Note that this library only appends to this table, so the responsibility is on the user to prune or archive the table as needed to keep it from growing too large.
 
 ## Cursor Management
 
-Using `chat.bsky.convo.getLog` as an example, here's what happens with calls to endpoints that return a cursor.
+Using [chat.bsky.convo.getLog](https://docs.bsky.app/docs/api/chat-bsky-convo-get-log) as an example, here's what happens with calls to endpoints that return a cursor.
 
 The BskyClient class method that calls this endpoint uses the `@process_cursor` decorator.
 
@@ -118,17 +128,51 @@ def get_convo_logs(
     collection_attr="logs",
     paginate=True,
 ):
-    # usage notes: https://github.com/bluesky-social/atproto/issues/2760
     return self.get(hostname="api.bsky.chat", endpoint=endpoint, params={"cursor": cursor})
 ```
 
-Before the API call is made, the most recent row in bsky_api_cursor for this endpoint is selected. If one is found, it's automatically added to the parameters passed to the call. If one is not found, the value of the "[zero cursor](https://github.com/bluesky-social/atproto/issues/2760#issuecomment-2316325455)" is used.
+### Typical Usage: 
+
+A value for the cursor argument should usually not be passed to this method. The typical use case is for the first call to this method to return all objects from the beginning, and subsequent calls only to return objects created since the previous call was made. For that behavior, call this method without passing a cursor value. The decorator code will override the default arg value as needed.
+
+Before the API call is made, the most recent row in `bsky_api_cursor` for this endpoint is selected. If one is found, it's automatically added to the parameters passed to the call. If one is not found, the value of the "[zero cursor](https://github.com/bluesky-social/atproto/issues/2760#issuecomment-2316325455)" is used.
 
 After the API call gets a successful response, the decorator code saves a row to the table with the new value of the cursor, unless the cursor value has not changes.
 
 The response attribute name for the list of objects returned, in this case "logs", is used by the decorator to collect the objects across multiple pages, if necessary.
 
+### Manual Usage:
 
+If a cursor value is explicitly passed to `get_convo_logs`, the decorator will not take effect and cursor management can be done manually by the calling code. 
+
+### Example:
+
+Here is a sequence of calls illustrating the usage, given a fresh database state in which the call is being made for the first time.
+
+```python
+In [1]: response = bsky.get_convo_logs(paginate=False)
+
+In [2]: len(response.logs)
+Out[2]: 100
+
+In [3]: response = bsky.get_convo_logs()
+
+In [4]: len(response.logs)
+Out[4]: 562
+
+In [5]: response = bsky.get_convo_logs()
+
+In [6]: len(response.logs)
+Out[6]: 0
+```
+
+The first call is made without pagination, which means only one call will be made to the endpoint. The page size is 100 and not configurable, so at most 100 objects will be returned in response.logs.
+
+The second call invokes the default pagination behavior, so it makes repeated calls until the API signals the end of the data set.
+
+The third call returns no items because no more data has been created since the second call was made.
+
+In order to retrieve the items again, the rows in the `bsky_api_cursor` table for this endpoint would need to be deleted.
 
 ## Features:
 

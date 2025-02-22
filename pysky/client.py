@@ -205,8 +205,7 @@ class BskyClient(object):
             else:
                 args["json"] = params
 
-        params_text = json.dumps(params)
-        apilog.params = params_text[:2048]  # to do
+        apilog.params = json.dumps(params)[:1024*16]
 
         try:
             r = self.call_with_session_refresh(method, uri, args)
