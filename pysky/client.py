@@ -7,8 +7,11 @@ import requests
 
 from pysky.models import BskySession, BskyAPICursor, BskyUserProfile, APICallLog
 from pysky.settings import AUTH_USERNAME, AUTH_PASSWORD
+from pysky.ratelimit import WRITE_OP_POINTS_MAP
 
+HOSTNAME_PUBLIC = "public.api.bsky.app"
 HOSTNAME_ENTRYWAY = "bsky.social"
+HOSTNAME_CHAT = "api.bsky.chat"
 AUTH_METHOD_PASSWORD, AUTH_METHOD_TOKEN = range(2)
 SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
 ZERO_CURSOR = "2222222222222"
@@ -117,10 +120,13 @@ class BskyClient(object):
                 session = self.post(
                     endpoint="xrpc/com.atproto.server.createSession",
                     auth_method=AUTH_METHOD_PASSWORD,
+                    hostname=HOSTNAME_ENTRYWAY,
                 )
             elif method == SESSION_METHOD_REFRESH:
                 session = self.post(
-                    endpoint="xrpc/com.atproto.server.refreshSession", use_refresh_token=True
+                    endpoint="xrpc/com.atproto.server.refreshSession",
+                    use_refresh_token=True,
+                    hostname=HOSTNAME_ENTRYWAY,
                 )
             self.exception = None
             self.accessJwt = session.accessJwt
@@ -166,7 +172,7 @@ class BskyClient(object):
     def call(
         self,
         method=requests.get,
-        hostname=HOSTNAME_ENTRYWAY,
+        hostname=HOSTNAME_PUBLIC,
         endpoint=None,
         auth_method=AUTH_METHOD_TOKEN,
         params=None,
@@ -183,11 +189,14 @@ class BskyClient(object):
             method=method.__name__,
             hostname=hostname,
             cursor_passed=params.get("cursor") if params else None,
+            write_op_points_consumed=WRITE_OP_POINTS_MAP.get(endpoint, 0),
         )
 
         args = {}
         args["headers"] = headers or {}
-        args["headers"].update(self.auth_header)
+        if hostname != HOSTNAME_PUBLIC:
+            args["headers"].update(self.auth_header)
+
         params = params or {}
 
         if auth_method == AUTH_METHOD_TOKEN and use_refresh_token:
@@ -273,6 +282,7 @@ class BskyClient(object):
             data=image_data,
             endpoint="xrpc/com.atproto.repo.uploadBlob",
             headers={"Content-Type": mimetype},
+            hostname=HOSTNAME_ENTRYWAY,
         )
 
     def create_record(self, collection, post):
@@ -281,7 +291,7 @@ class BskyClient(object):
             "collection": collection,
             "record": post,
         }
-        return self.post(endpoint="xrpc/com.atproto.repo.createRecord", params=params)
+        return self.post(hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.createRecord", params=params)
 
     def create_post(self, post):
         return self.create_record("app.bsky.feed.post", post)
@@ -292,7 +302,7 @@ class BskyClient(object):
             "collection": collection,
             "rkey": rkey,
         }
-        return self.post(endpoint="xrpc/com.atproto.repo.deleteRecord", params=params)
+        return self.post(hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.deleteRecord", params=params)
 
     def delete_post(self, post_id):
         return self.delete_record("app.bsky.feed.post", post_id)
@@ -310,4 +320,4 @@ class BskyClient(object):
         paginate=True,
     ):
         # usage notes: https://github.com/bluesky-social/atproto/issues/2760
-        return self.get(hostname="api.bsky.chat", endpoint=endpoint, params={"cursor": cursor})
+        return self.get(hostname=HOSTNAME_CHAT, endpoint=endpoint, params={"cursor": cursor})
