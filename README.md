@@ -184,11 +184,11 @@ The fourth call passes the zero cursor manually which gets all data going back t
 
 Another way to retrieve data that's earlier than the latest saved cursor is to update/delete the row(s) in the `api_call_log` table for this endpoint to remove cursor history.
 
-## User Management
+## Cached User Profiles
 
-User DID/handle/display name will be saved to the bsky_user_profile table if looked up through this method: `pysky.models.BskyUserProfile.get_or_create_from_api(actor, bsky)`
+User DID/handle/display name will be saved to the bsky_user_profile table if the API is called through this method: `BskyClient.get_user_profile(actor)`. Though not if called through `bsky.get(endpoint="xrpc/app.bsky.actor.getProfile", ...)`.
 
-Note that this method currently does not allow for updating rows in this table, so changes to a user's handle or display name made after being cached here will not be seen. To always get the live profile object, call `BskyClient.get_profile(actor)`.
+Note that handles and display names that are updated on Bluesky won't be seen if using the local cached version of data. To force updating the database cached data with live data from the API, pass `force_remote_call=True` to `get_user_profile()`.
 
 ## Rate Limit Monitoring
 
