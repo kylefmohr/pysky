@@ -220,14 +220,17 @@ class BskyClient(object):
 
         try:
             r, duration_microseconds, session_was_refreshed = self.call_with_session_refresh(method, uri, args)
-            response_object = json.loads(r.text, object_hook=lambda d: SimpleNamespace(**d))
+            try:
+                response_object = json.loads(r.text, object_hook=lambda d: SimpleNamespace(**d))
+            except json.JSONDecodeError:
+                response_object = SimpleNamespace()
 
             apilog.session_was_refreshed = session_was_refreshed
             apilog.duration_microseconds = duration_microseconds
             apilog.http_status_code = r.status_code
 
             if r.status_code != 200:
-                apilog.exception_response = r.text
+                apilog.exception_response = r.text[:1024*16]
                 apilog.exception_class = getattr(response_object, "error", None)
                 apilog.exception_text = getattr(response_object, "message", None)
 
@@ -238,16 +241,20 @@ class BskyClient(object):
             r = None
             apilog.exception_class = __class__.__name__
             apilog.exception_text = str(e)
-            response_object = None
+            response_object = SimpleNamespace()
             call_exception = e
 
         if not skip_log:
             apilog.save()
 
         if apilog.exception_class:
-            sys.stderr.write(
-                f"{apilog.exception_class} - for more details run the query: SELECT * FROM api_call_log WHERE id={apilog.id};\n"
-            )
+            err_prefix = f"{apilog.exception_class} - {apilog.exception_text}"
+        else:
+            err_prefix = f"Bluesky API returned HTTP {apilog.http_status_code}"
+
+        sys.stderr.write(
+            f"{err_prefix}\nFor more details run the query:\nSELECT * FROM api_call_log WHERE id={apilog.id};\n"
+        )
 
         if apilog.http_status_code and apilog.http_status_code >= 400:
             raise Exception(

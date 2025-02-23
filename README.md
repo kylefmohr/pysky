@@ -2,19 +2,19 @@
 A Bluesky API library with database backing that enables some quality of life features:
 
 * Automatic session caching/refreshing
-* Cursor management - cache the last cursor returned from an endpoint that returns one (such as `chat.bsky.convo.getLog`) and automatically pass it to the next call to that API, ensuring that all objects are retuened and that each object is only returned once
+* Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are returned and that each object is only returned once
 * Pagination - receive all pages of results with one call
-* Logging - metadata for all API calls and responses (including exceptions) are stored in the database
+* Logging - metadata for all API calls and responses (including exceptions) is stored in the database
 * Cached user profiles for local DID/handle lookups
 
 ## Installation / Setup
 
-1. Clone the repo, and install the few dependencies: requests, peewee, and psycopg2-binary. The latter is unnecessary if only using SQLite.
+1. Clone the repo and install the few dependencies: requests, peewee, and psycopg2-binary. The latter is unnecessary if only using SQLite.
 
 2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
 
     * PostgreSQL configuration: If the official PostgreSQL environment variables are populated: `PGUSER`, `PGHOST`, `PGDATABASE`, `PGPASSWORD` (and optionally `PGPORT`) then a PostgreSQL database connection will be used.
-    * SQLite configuration: If the PostgreSQL environment variables are not populated, the a SQLite database will be created with the filename specified in `PYSKY_SQLITE_FILENAME`, otherwise ":memory:" will be used, creating a non-persisted in-memory database.
+    * SQLite configuration: If the PostgreSQL environment variables are not populated, the a SQLite database will be created with the filename specified in `BSKY_SQLITE_FILENAME`, otherwise ":memory:" will be used, creating a non-persisted in-memory database.
 
 3. Create database tables: run `./pysky/bin/create_tables.py`.
 
@@ -76,10 +76,13 @@ image_bytes = open("file.png", rb").read()
 response = bsky.upload_blob(blob_data=image_bytes, mimetype="image/png")
 ```
 
-`bsky.upload_blob(blob_data, mimetype)` is a wrapper for:
+upload_blob() is a wrapper for:
 
 ```python
-bsky.post(data=blob_data, endpoint="xrpc/com.atproto.repo.uploadBlob", headers={"Content-Type": mimetype}, hostname="bsky.social")
+bsky.post(data=blob_data,
+          endpoint="xrpc/com.atproto.repo.uploadBlob",
+          headers={"Content-Type": mimetype},
+          hostname="bsky.social")
 ```
 
 
@@ -87,35 +90,44 @@ bsky.post(data=blob_data, endpoint="xrpc/com.atproto.repo.uploadBlob", headers={
 
 The response from `bsky.get()` and `bsky.post()` is the JSON response from Bluesky converted to a [SimpleNamespace](https://docs.python.org/3/library/types.html#types.SimpleNamespace) object. This is for the convenience of accessing attributes with dot notation rather than dict lookups.
 
-The response is otherwise unmodified, so refer to the [API docs](https://docs.bsky.app/docs/category/http-reference) for the response schema.
+The response is otherwise unmodified, so refer to the [API docs](https://docs.bsky.app/docs/category/http-reference) for the response schema of a given call.
 
 
 ## Session Management
 
-Behind the scenes, the BskyClient constructor checks the database for the most recent cached session, an accessJwt/refreshJwt pair serialized to the table bsky_session. If none exist, a session is created and serialized to the table.
+Behind the scenes, the `BskyClient` constructor checks the database for the most recent cached session, an accessJwt/refreshJwt pair serialized to the table `bsky_session`. If none exist, a session is created and saved to the table.
 
-If a session is found in the database, the Bluesky API is not called to establish a new session. If on the first (or any subsequent) use of this session the API responds with an `ExpiredToken` error, a new session is established and saved to bsky_session. The API call is automatically repeated with the new token.
+If a session is found in the database, the Bluesky API is not called to establish a new session. If on the first (or any subsequent) use of this session the API responds with an `ExpiredToken` error, a new session is established and saved to `bsky_session`. The API call is automatically repeated with the new token.
 
+If the default public hostname (public.api.bsky.app) is being called, the auth header is not sent in the request.
 
-## Error Logging
+## Database Logging
+
+All API calls are logged to the `api_call_log` table. Exception data on unsuccessful calls is saved with the other details of the request, which helps with debugging.
 
 ```python
-In [15]: response = bsky.get(endpoint="xrpc/app.bsky.feed.searchPosts", params={"q": "", "mentions": "handle"})
-InvalidRequest - for more details run the query: SELECT * FROM api_call_log WHERE id=127425;
+In [1]: response = bsky.get(endpoint="xrpc/app.bsky.feed.searchPosts",
+   ...:                     hostname="bsky.social",
+   ...:                     params={"q": "", "mentions": "handle"})
+InvalidRequest - Error: Params must have the property "q"
+For more details run the query:
+SELECT * FROM api_call_log WHERE id=152638;
 ---------------------------------------------------------------------------
 Exception                                 Traceback (most recent call last)
-Cell In[15], line 1
-----> 1 response = bsky.get(endpoint="xrpc/app.bsky.feed.searchPosts", params={"q": "", "mentions": "handle"})
+Cell In[1], line 1
+----> 1 response = bsky.get(endpoint="xrpc/app.bsky.feed.searchPosts",
+      2                     hostname="bsky.social",
+      3                     params={"q": "", "mentions": "handle"})
 ...
 ```
 
-Note the log message indicating the query to run in order to see more details on the error.
+Note the log message indicating the query to run in order to see the full record for the error.
 
 ```
-stroma=# SELECT * FROM api_call_log WHERE id=127425;
--[ RECORD 1 ]------+----------------------------------------------------------------------------------
-id                       | 127425
-timestamp                | 2025-02-21 19:45:28.707427-05
+stroma=# SELECT * FROM api_call_log WHERE id=152638;
+-[ RECORD 1 ]------------+----------------------------------------------------------------------------------
+id                       | 152638
+timestamp                | 2025-02-23 16:45:30.715534-05
 hostname                 | bsky.social
 endpoint                 | xrpc/app.bsky.feed.searchPosts
 cursor_passed            |
@@ -128,11 +140,11 @@ exception_text           | Error: Params must have the property "q"
 exception_response       | {"error":"InvalidRequest","message":"Error: Params must have the property \"q\""}
 response_keys            | error,message
 write_op_points_consumed | 0
-session_was_refreshed    |
-duration_microseconds    |
+session_was_refreshed    | f
+duration_microseconds    | 18380
 ```
 
-Successful API calls also write rows to this table. Note that this library only appends to this table, so the responsibility is on the user to prune or archive the table as needed to keep it from growing too large. However, see the next section about cursor management. Rows with cursor data should be retained if that feature is important.
+Note that this library only appends to this table, so the responsibility is on the user to prune or archive the table as needed to keep it from growing too large. However, see the next section about cursor management. Rows with cursor data should be retained if that feature is important.
 
 ## Cursor Management
 
