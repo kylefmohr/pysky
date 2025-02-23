@@ -114,7 +114,7 @@ session_was_refreshed    |
 duration_microseconds    |
 ```
 
-Successful API calls also write rows to this table. Note that this library only appends to this table, so the responsibility is on the user to prune or archive the table as needed to keep it from growing too large.
+Successful API calls also write rows to this table. Note that this library only appends to this table, so the responsibility is on the user to prune or archive the table as needed to keep it from growing too large. However, see the next section about cursor management. Rows with cursor data should be retained if that feature is important.
 
 ## Cursor Management
 
@@ -138,15 +138,15 @@ def get_convo_logs(
 
 A value for the cursor argument should usually not be passed to this method. The typical use case is for the first call to this method to return all objects from the beginning, and subsequent calls only to return objects created since the previous call was made. For that behavior, call this method without passing a cursor value. The decorator code will override the default arg value as needed.
 
-Before the API call is made, the most recent row in `bsky_api_cursor` for this endpoint is selected. If one is found, it's automatically added to the parameters passed to the call. If one is not found, the value of the "[zero cursor](https://github.com/bluesky-social/atproto/issues/2760#issuecomment-2316325455)" is used.
+Before the API call is made, the most recent cursor received for this endpoint is queried from `api_call_log`. If one is found, it's automatically added to the parameters passed to the call. If one is not found, the value of the "[zero cursor](https://github.com/bluesky-social/atproto/issues/2760#issuecomment-2316325455)" is used.
 
-After the API call gets a successful response, the decorator code saves a row to the table with the new value of the cursor, unless the cursor value has not changes.
+If the API call gets a successful response, the new cursor value is saved to `api_call_log` as part of the normal course of database logging.
 
-The response attribute name for the list of objects returned, in this case "logs", is used by the decorator to collect the objects across multiple pages, if necessary.
+The response attribute name for the list of objects returned, in this case "logs", is used by the decorator to collect the objects across multiple pages into one list, if necessary.
 
 ### Manual Usage:
 
-If a cursor value is explicitly passed to `get_convo_logs`, the decorator will not take effect and cursor management can be done manually by the calling code. 
+If a cursor value is explicitly passed to `get_convo_logs`, the decorator will not take effect and cursor management can be done manually by the calling code. This might be done if past data needs to be retrieved again.
 
 ### Example:
 
@@ -161,12 +161,17 @@ Out[2]: 100
 In [3]: response = bsky.get_convo_logs()
 
 In [4]: len(response.logs)
-Out[4]: 562
+Out[4]: 625
 
 In [5]: response = bsky.get_convo_logs()
 
 In [6]: len(response.logs)
 Out[6]: 0
+
+In [7]: response = bsky.get_convo_logs(cursor=pysky.ZERO_CURSOR)
+
+In [8]: len(response.logs)
+Out[8]: 725
 ```
 
 The first call is made without pagination, which means only one call will be made to the endpoint. The page size is 100 and not configurable, so at most 100 objects will be returned in response.logs.
@@ -175,7 +180,9 @@ The second call invokes the default pagination behavior, so it makes repeated ca
 
 The third call returns no items because no more data has been created since the second call was made.
 
-In order to retrieve the items again, the rows in the `bsky_api_cursor` table for this endpoint would need to be deleted.
+The fourth call passes the zero cursor manually which gets all data going back to the beginning, receiving all 725 objects.
+
+Another way to retrieve data that's earlier than the latest saved cursor is to update/delete the row(s) in the `api_call_log` table for this endpoint to remove cursor history.
 
 ## User Management
 

@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from datetime import datetime
 import requests
 
-from pysky.models import BskySession, BskyAPICursor, BskyUserProfile, APICallLog
+from pysky.models import BskySession, BskyUserProfile, APICallLog
 from pysky.settings import AUTH_USERNAME, AUTH_PASSWORD
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 
@@ -51,17 +51,8 @@ class BskyClient(object):
 
             # only provide the database-backed cursor if one was not passed manually
             if not "cursor" in kwargs:
-                previous_db_cursor = (
-                    BskyAPICursor.select()
-                    .where(BskyAPICursor.endpoint == endpoint)
-                    .order_by(BskyAPICursor.timestamp.desc())
-                    .first()
-                )
-                kwargs["cursor"] = previous_db_cursor.cursor if previous_db_cursor else ZERO_CURSOR
-                if kwargs["cursor"] == ZERO_CURSOR:
-                    previous_db_cursor = BskyAPICursor(cursor=ZERO_CURSOR)
-            else:
-                previous_db_cursor = None
+                previous_db_cursor = APICallLog.select().where(APICallLog.endpoint==endpoint, APICallLog.cursor_received.is_null(False)).order_by(APICallLog.timestamp.desc()).first()
+                kwargs["cursor"] = previous_db_cursor.cursor_received if previous_db_cursor else ZERO_CURSOR
 
             if paginate:
                 responses, final_cursor = self.call_with_pagination(func, **kwargs)
@@ -69,10 +60,6 @@ class BskyClient(object):
             else:
                 response = func(self, **kwargs)
                 final_cursor = response.cursor
-
-            if previous_db_cursor and previous_db_cursor.cursor != final_cursor:
-                # only save a new cursor record if it's changed and originally came from the database (or inherited the default value)
-                BskyAPICursor.create(endpoint=endpoint, cursor=final_cursor)
 
             return response
 

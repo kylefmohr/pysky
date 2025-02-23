@@ -26,15 +26,6 @@ class BskySession(BaseModel):
         table_name = "bsky_session"
 
 
-class BskyAPICursor(BaseModel):
-    timestamp = DateTimeField(default=datetime.now)
-    endpoint = CharField()
-    cursor = CharField()
-
-    class Meta:
-        table_name = "bsky_api_cursor"
-
-
 class BskyUserProfile(BaseModel):
     did = CharField(unique=True)
     handle = CharField(unique=True)
