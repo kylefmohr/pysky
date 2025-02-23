@@ -289,12 +289,12 @@ class BskyClient(object):
         except:
             return False
 
-    def upload_blob(self, blob_data, mimetype):
+    def upload_blob(self, blob_data, mimetype, hostname=HOSTNAME_ENTRYWAY):
         return self.post(
             data=blob_data,
             endpoint="xrpc/com.atproto.repo.uploadBlob",
             headers={"Content-Type": mimetype},
-            hostname=HOSTNAME_ENTRYWAY,
+            hostname=hostname,
         )
 
     def create_record(self, collection, post):

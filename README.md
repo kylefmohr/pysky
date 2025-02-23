@@ -66,23 +66,25 @@ params = {
     }
 }
 
-response = bsky.post(hostname="bsky.social", endpoint="xrpc/com.atproto.repo.createRecord", params=params)
+response = bsky.post(hostname="bsky.social",
+                     endpoint="xrpc/com.atproto.repo.createRecord",
+                     params=params)
 ```
 
 The library handles passing the values provided in `params` as a query string for GET requests and as a json body for POST requests. Binary data (e.g. image uploads) should be passed as the `data` argument to `BskyClient.post()`.
 
 ```python
-image_bytes = open("file.png", rb").read()
-response = bsky.upload_blob(blob_data=image_bytes, mimetype="image/png")
+response = bsky.post(data=blob_data,
+                     endpoint="xrpc/com.atproto.repo.uploadBlob",
+                     headers={"Content-Type": mimetype},
+                     hostname="bsky.social")
 ```
 
-upload_blob() is a wrapper for:
+There's also an `upload_blob()` wrapper method for this:
 
 ```python
-bsky.post(data=blob_data,
-          endpoint="xrpc/com.atproto.repo.uploadBlob",
-          headers={"Content-Type": mimetype},
-          hostname="bsky.social")
+image_bytes = open("file.png", rb").read()
+response = bsky.upload_blob(blob_data=image_bytes, mimetype="image/png")
 ```
 
 
