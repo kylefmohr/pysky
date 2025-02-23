@@ -30,39 +30,9 @@ class BskyUserProfile(BaseModel):
     did = CharField(unique=True)
     handle = CharField(unique=True)
     display_name = CharField(null=True)
-    viewer_muted = BooleanField()
-    viewer_blocked = BooleanField()
 
     class Meta:
         table_name = "bsky_user_profile"
-
-    @staticmethod
-    def get_or_create_from_api(actor, bsky):
-        """Either a user handle or DID can be passed to this method. Handle
-        should not include the @ symbol."""
-        try:
-            if actor.startswith("did:"):
-                return BskyUserProfile.get(BskyUserProfile.did == actor)
-            else:
-                return BskyUserProfile.get(BskyUserProfile.handle == actor)
-        except BskyUserProfile.DoesNotExist:
-
-            try:
-                response = bsky.get_profile(actor)
-            except Exception as e:
-                raise
-
-            user, _ = BskyUserProfile.get_or_create(
-                did=response.did,
-                defaults={
-                    "handle": response.handle,
-                    "display_name": getattr(response, "displayName", None),
-                    "viewer_muted": response.viewer.muted,
-                    "viewer_blocked": response.viewer.blockedBy,
-                },
-            )
-
-            return user
 
 
 class ConvoMessage(BaseModel):

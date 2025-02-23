@@ -1,3 +1,4 @@
+import re
 import sys
 import json
 import inspect
@@ -311,10 +312,6 @@ class BskyClient(object):
     def delete_post(self, post_id):
         return self.delete_record("app.bsky.feed.post", post_id)
 
-    def get_profile(self, actor):
-        endpoint = "xrpc/app.bsky.actor.getProfile"
-        return self.get(endpoint=endpoint, params={"actor": actor})
-
     @process_cursor
     def get_convo_logs(
         self,
@@ -323,5 +320,24 @@ class BskyClient(object):
         collection_attr="logs",
         paginate=True,
     ):
-        # usage notes: https://github.com/bluesky-social/atproto/issues/2760
+        # cursor usage notes: https://github.com/bluesky-social/atproto/issues/2760
         return self.get(hostname=HOSTNAME_CHAT, endpoint=endpoint, params={"cursor": cursor})
+
+    def get_user_profile(self, actor, force_remote_call=False):
+        """Either a user handle or DID can be passed to this method. Handle
+        should not include the @ symbol, but it will be stripped if passed."""
+        actor = re.sub(r"^@", "", actor)
+        try:
+            assert force_remote_call == False
+            if actor.startswith("did:"):
+                return BskyUserProfile.get(BskyUserProfile.did == actor)
+            else:
+                return BskyUserProfile.get(BskyUserProfile.handle == actor)
+        except (BskyUserProfile.DoesNotExist, AssertionError):
+            endpoint = "xrpc/app.bsky.actor.getProfile"
+            response = self.get(endpoint=endpoint, params={"actor": actor})
+            user, _ = BskyUserProfile.get_or_create(did=response.did)
+            user.handle = response.handle
+            user.display_name = getattr(response, "displayName", None)
+            user.save()
+            return user
