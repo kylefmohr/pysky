@@ -206,7 +206,7 @@ In [8]: len(response.logs)
 Out[8]: 725
 ```
 
-The first call is made without pagination, which means only one call will be made to the endpoint. The page size is 100 and not configurable, so at most 100 objects will be returned in response.logs.
+The first call is made without pagination, which means only one call will be made to the endpoint. The page size is 100 and not configurable, so at most 100 objects will be returned in `response.logs`.
 
 The second call invokes the default pagination behavior, so it makes repeated calls until the API signals the end of the data set.
 
@@ -224,11 +224,6 @@ Note that handles and display names that are updated on Bluesky won't be seen if
 
 ## Rate Limit Monitoring
 
-Before each API call that would trigger a write and incur a cost against the hourly/daily rate limit budget, the cost of prior calls is checked in the database to ensure that the limit will not be exceeded. If it would be, a RateLimitExceeded exception is raised. A warning is printed to sys.stderr if 75% of the hourly or daily budget has been used.
+Before each API call that would trigger a write and incur a cost against the hourly/daily rate limit budget, the cost of prior calls is checked in the database to ensure that the limit will not be exceeded. If it would be, a `RateLimitExceeded` exception is raised. A warning is printed to sys.stderr if 75% of the hourly or daily budget has been used.
 
 See: https://docs.bsky.app/docs/advanced-guides/rate-limits
-
-## Features:
-
-   * throttling / rate limit management
-   * alerting through Bluesky messages (throttled to prevent flooding)
