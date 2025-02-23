@@ -43,7 +43,7 @@ In [6]: # there's also a wrapper function for this call, but I haven't created m
    ...: 
 
 In [7]: profile.displayName
-Out[7]: 'It's The Weekend 😌'
+Out[7]: "It's The Weekend 😌"
 ```
 
 This library is fairly minimalist and expects the user to refer to the [official API reference](https://docs.bsky.app/docs/category/http-reference) for endpoint and parameter names. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
@@ -96,19 +96,22 @@ Note the log message indicating the query to run in order to see more details on
 ```
 stroma=# SELECT * FROM api_call_log WHERE id=127425;
 -[ RECORD 1 ]------+----------------------------------------------------------------------------------
-id                 | 127425
-timestamp          | 2025-02-21 19:45:28.707427-05
-hostname           | bsky.social
-endpoint           | xrpc/app.bsky.feed.searchPosts
-cursor_passed      |
-cursor_received    |
-method             | get
-http_status_code   | 400
-params             | {"q": "", "mentions": "handle"}
-exception_class    | InvalidRequest
-exception_text     | Error: Params must have the property "q"
-exception_response | {"error":"InvalidRequest","message":"Error: Params must have the property \"q\""}
-response_keys      | error,message
+id                       | 127425
+timestamp                | 2025-02-21 19:45:28.707427-05
+hostname                 | bsky.social
+endpoint                 | xrpc/app.bsky.feed.searchPosts
+cursor_passed            |
+cursor_received          |
+method                   | get
+http_status_code         | 400
+params                   | {"q": "", "mentions": "handle"}
+exception_class          | InvalidRequest
+exception_text           | Error: Params must have the property "q"
+exception_response       | {"error":"InvalidRequest","message":"Error: Params must have the property \"q\""}
+response_keys            | error,message
+write_op_points_consumed | 0
+session_was_refreshed    |
+duration_microseconds    |
 ```
 
 Successful API calls also write rows to this table. Note that this library only appends to this table, so the responsibility is on the user to prune or archive the table as needed to keep it from growing too large.
@@ -179,6 +182,12 @@ In order to retrieve the items again, the rows in the `bsky_api_cursor` table fo
 User DID/handle/display name will be saved to the bsky_user_profile table if looked up through this method: `pysky.models.BskyUserProfile.get_or_create_from_api(actor, bsky)`
 
 Note that this method currently does not allow for updating rows in this table, so changes to a user's handle or display name made after being cached here will not be seen. To always get the live profile object, call `BskyClient.get_profile(actor)`.
+
+## Rate Limit Monitoring
+
+Before each API call that would trigger a write and incur a cost against the hourly/daily rate limit budget, the cost of prior calls is checked in the database to ensure that the limit will not be exceeded. If it would be, a RateLimitExceeded exception is raised. A warning is printed to sys.stderr if 75% of the hourly or daily budget has been used.
+
+See: https://docs.bsky.app/docs/advanced-guides/rate-limits
 
 ## Features:
 
