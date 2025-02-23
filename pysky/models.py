@@ -104,6 +104,8 @@ class APICallLog(BaseModel):
     exception_response = CharField(null=True)
     response_keys = CharField(null=True)
     write_op_points_consumed = IntegerField()
+    session_was_refreshed = BooleanField(null=True)
+    duration_microseconds = IntegerField(null=True)
 
     class Meta:
         table_name = "api_call_log"

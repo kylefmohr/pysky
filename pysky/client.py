@@ -1,13 +1,14 @@
 import sys
 import json
 import inspect
+from time import time
 from types import SimpleNamespace
 from datetime import datetime
 import requests
 
 from pysky.models import BskySession, BskyAPICursor, BskyUserProfile, APICallLog
 from pysky.settings import AUTH_USERNAME, AUTH_PASSWORD
-from pysky.ratelimit import WRITE_OP_POINTS_MAP
+from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 
 HOSTNAME_PUBLIC = "public.api.bsky.app"
 HOSTNAME_ENTRYWAY = "bsky.social"
@@ -18,6 +19,10 @@ ZERO_CURSOR = "2222222222222"
 
 
 class ExcessiveIteration(Exception):
+    pass
+
+
+class RateLimitExceeded(Exception):
     pass
 
 
@@ -160,14 +165,19 @@ class BskyClient(object):
         self.set_auth_header()
 
     def call_with_session_refresh(self, method, uri, args):
+
+        time_start = time()
         r = method(uri, **args)
+        time_end = time()
+        session_was_refreshed = False
 
         if BskyClient.is_expired_token_response(r):
             self.refresh_session()
             args["headers"].update(self.auth_header)
             r = method(uri, **args)
+            session_was_refreshed = True
 
-        return r
+        return r, int((time_end - time_start) * 100000), session_was_refreshed
 
     def call(
         self,
@@ -184,12 +194,16 @@ class BskyClient(object):
 
         uri = f"https://{hostname}/{endpoint}"
 
+        write_op_points_cost = WRITE_OP_POINTS_MAP.get(endpoint, 0)
+        if write_op_points_cost > 0:
+            check_write_ops_budget()
+
         apilog = APICallLog(
             endpoint=endpoint,
             method=method.__name__,
             hostname=hostname,
             cursor_passed=params.get("cursor") if params else None,
-            write_op_points_consumed=WRITE_OP_POINTS_MAP.get(endpoint, 0),
+            write_op_points_consumed=write_op_points_cost,
         )
 
         args = {}
@@ -217,10 +231,13 @@ class BskyClient(object):
         apilog.params = json.dumps(params)[:1024*16]
 
         try:
-            r = self.call_with_session_refresh(method, uri, args)
+            r, duration_microseconds, session_was_refreshed = self.call_with_session_refresh(method, uri, args)
             response_object = json.loads(r.text, object_hook=lambda d: SimpleNamespace(**d))
 
+            apilog.session_was_refreshed = session_was_refreshed
+            apilog.duration_microseconds = duration_microseconds
             apilog.http_status_code = r.status_code
+
             if r.status_code != 200:
                 apilog.exception_response = r.text
                 apilog.exception_class = getattr(response_object, "error", None)
