@@ -1,5 +1,5 @@
 # pysky
-A Bluesky API library with database backing that enables some quality of life features:
+A simple Bluesky API library backed by a database to enable some quality of life features:
 
 * Automatic session caching/refreshing
 * Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are returned and that each object is only returned once
@@ -9,7 +9,7 @@ A Bluesky API library with database backing that enables some quality of life fe
 
 ## Installation / Setup
 
-1. Clone the repo and install the few dependencies: requests, peewee, and psycopg2-binary. The latter is unnecessary if only using SQLite.
+1. Clone the repo and install the few dependencies: requests, peewee, and psycopg2-binary. The latter is unnecessary if not using PostgreSQL.
 
 2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
 
@@ -87,6 +87,61 @@ image_bytes = open("file.png", rb").read()
 response = bsky.upload_blob(blob_data=image_bytes, mimetype="image/png")
 ```
 
+To create a post with two images attached:
+
+```python
+In [1]: from datetime import datetime, timezone
+
+In [2]: img1 = bsky.upload_blob(blob_data=open("file1.png", "rb").read(), mimetype="image/png")
+   ...: img2 = bsky.upload_blob(blob_data=open("file2.png", "rb").read(), mimetype="image/png")
+
+In [3]: images = [
+   ...:       {
+   ...:         "alt": "alt text 1",
+   ...:         "image": {
+   ...:           "$type": "blob",
+   ...:           "ref": {
+   ...:             "$link": getattr(img1.blob.ref, '$link'),
+   ...:           },
+   ...:           "mimeType": img1.blob.mimeType,
+   ...:           "size": img1.blob.size,
+   ...:         }
+   ...:       },
+   ...:       {
+   ...:         "alt": "alt text 2",
+   ...:         "image": {
+   ...:           "$type": "blob",
+   ...:           "ref": {
+   ...:             "$link": getattr(img2.blob.ref, '$link'),
+   ...:           },
+   ...:           "mimeType": img2.blob.mimeType,
+   ...:           "size": img2.blob.size,
+   ...:         }
+   ...:       }
+   ...:     ]
+
+In [4]: post = {
+   ...:   "$type": "app.bsky.feed.post",
+   ...:   "text": "example post with two images attached",
+   ...:   "createdAt": datetime.now(timezone.utc).isoformat(),
+   ...:   "embed": {
+   ...:     "$type": "app.bsky.embed.images",
+   ...:     "images": images,
+   ...:   }
+   ...: }
+
+In [5]: response = bsky.create_post(post)
+
+In [6]: response
+Out[6]:
+namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3livdaserb223',
+          cid='bafyreihnclijoiunual4euonh53q27f2dpxawlvakbenik4z55tmwotdxu',
+          commit=namespace(cid='bafyreibnb3goacdmjyd7dq3py5v4bfjak2bystvjvf7fqstqaexutcyyhy',
+                           rev='3livdasf4y223'),
+          validationStatus='valid')
+```
+
+Note that a `$link` attribute can't be accessed with dot notation due to the dollar sign, so `getattr(img1.blob.ref, '$link')` is required.
 
 ## Responses
 
