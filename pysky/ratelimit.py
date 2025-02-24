@@ -41,7 +41,10 @@ def check_write_ops_budget():
         )
 
     if budget_used_hour >= WRITE_OPS_BUDGET_1_HOUR or budget_used_day >= WRITE_OPS_BUDGET_24_HOUR:
-        raise RateLimitExceeded(f"at or exceeded write operations budget: {budget_used_hour}/{WRITE_OPS_BUDGET_1_HOUR} points used in the last hour, {budget_used_day}/{WRITE_OPS_BUDGET_24_HOUR} points used in the last 24 hours")
+        raise RateLimitExceeded(
+            f"at or exceeded write operations budget: {budget_used_hour}/{WRITE_OPS_BUDGET_1_HOUR} points used in the last hour, {budget_used_day}/{WRITE_OPS_BUDGET_24_HOUR} points used in the last 24 hours"
+        )
+
 
 """
 to do - implement these per minute/per day limits

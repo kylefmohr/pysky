@@ -14,9 +14,7 @@ def get_db_postgresql():
             ("PGPASSWORD", "password"),
         ]
         optional_pgsql_env_vars = [("PGPORT", "port")]
-        pgsql_args = {
-            argname: os.environ[varname] for varname, argname in required_pgsql_env_vars
-        }
+        pgsql_args = {argname: os.environ[varname] for varname, argname in required_pgsql_env_vars}
         pgsql_args.update(
             {
                 argname: os.getenv(varname)

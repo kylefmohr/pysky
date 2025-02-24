@@ -52,8 +52,17 @@ class BskyClient(object):
 
             # only provide the database-backed cursor if one was not passed manually
             if not "cursor" in kwargs:
-                previous_db_cursor = APICallLog.select().where(APICallLog.endpoint==endpoint, APICallLog.cursor_received.is_null(False)).order_by(APICallLog.timestamp.desc()).first()
-                kwargs["cursor"] = previous_db_cursor.cursor_received if previous_db_cursor else ZERO_CURSOR
+                previous_db_cursor = (
+                    APICallLog.select()
+                    .where(
+                        APICallLog.endpoint == endpoint, APICallLog.cursor_received.is_null(False)
+                    )
+                    .order_by(APICallLog.timestamp.desc())
+                    .first()
+                )
+                kwargs["cursor"] = (
+                    previous_db_cursor.cursor_received if previous_db_cursor else ZERO_CURSOR
+                )
 
             if paginate:
                 responses, final_cursor = self.call_with_pagination(func, **kwargs)
@@ -219,7 +228,9 @@ class BskyClient(object):
         apilog.params = json.dumps(params)[:1024*16]
 
         try:
-            r, duration_microseconds, session_was_refreshed = self.call_with_session_refresh(method, uri, args)
+            r, duration_microseconds, session_was_refreshed = self.call_with_session_refresh(
+                method, uri, args
+            )
             try:
                 response_object = json.loads(r.text, object_hook=lambda d: SimpleNamespace(**d))
             except json.JSONDecodeError:
@@ -305,7 +316,9 @@ class BskyClient(object):
             "collection": collection,
             "record": post,
         }
-        return self.post(hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.createRecord", params=params)
+        return self.post(
+            hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.createRecord", params=params
+        )
 
     def create_post(self, post):
         return self.create_record("app.bsky.feed.post", post)
@@ -316,7 +329,9 @@ class BskyClient(object):
             "collection": collection,
             "rkey": rkey,
         }
-        return self.post(hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.deleteRecord", params=params)
+        return self.post(
+            hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.deleteRecord", params=params
+        )
 
     def delete_post(self, post_id):
         return self.delete_record("app.bsky.feed.post", post_id)
