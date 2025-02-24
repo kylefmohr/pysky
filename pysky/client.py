@@ -247,14 +247,16 @@ class BskyClient(object):
         if not skip_log:
             apilog.save()
 
+        err_prefix = None
         if apilog.exception_class:
             err_prefix = f"{apilog.exception_class} - {apilog.exception_text}"
-        else:
+        elif apilog.http_status_code >= 400:
             err_prefix = f"Bluesky API returned HTTP {apilog.http_status_code}"
 
-        sys.stderr.write(
-            f"{err_prefix}\nFor more details run the query:\nSELECT * FROM api_call_log WHERE id={apilog.id};\n"
-        )
+        if err_prefix:
+            sys.stderr.write(
+                f"{err_prefix}\nFor more details run the query:\nSELECT * FROM api_call_log WHERE id={apilog.id};\n"
+            )
 
         if apilog.http_status_code and apilog.http_status_code >= 400:
             raise Exception(
