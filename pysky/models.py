@@ -29,7 +29,7 @@ class BskySession(BaseModel):
 class BskyUserProfile(BaseModel):
     did = CharField(unique=True)
     handle = CharField(unique=True)
-    display_name = CharField(null=True)
+    displayName = CharField(null=True, column_name='displayName')
 
     class Meta:
         table_name = "bsky_user_profile"

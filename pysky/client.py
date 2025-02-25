@@ -428,7 +428,7 @@ class BskyClient(object):
             if not user:
                 user = BskyUserProfile(did=response.did)
             user.handle = response.handle
-            user.display_name = getattr(response, "displayName", None)
+            user.displayName = getattr(response, "displayName", None)
             user.save()
             return user
 
