@@ -37,7 +37,7 @@ Out[4]: 'craigweekend.bsky.social'
 In [5]: profile.postsCount
 Out[5]: 104
 
-In [6]: # there's also a wrapper function for this call, but I haven't created many of these
+In [6]: # wrapper function for bsky.get(endpoint="xrpc/app.bsky.actor.getProfile", ...)
    ...: profile = bsky.get_user_profile("did:plc:zcmchxw2gxlbincrchpdjopq")
 
 In [7]: profile.displayName
