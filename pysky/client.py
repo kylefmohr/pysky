@@ -226,7 +226,8 @@ class BskyClient(object):
 
         write_op_points_cost = WRITE_OP_POINTS_MAP.get(endpoint, 0)
         if write_op_points_cost > 0:
-            check_write_ops_budget()
+            check_write_ops_budget(hours=1, points_to_use=write_op_points_cost, override_budget=getattr(self, "override_budgets", {}).get(1))
+            check_write_ops_budget(hours=24, points_to_use=write_op_points_cost, override_budget=getattr(self, "override_budgets", {}).get(24))
 
         apilog = APICallLog(
             endpoint=endpoint,
@@ -438,4 +439,11 @@ class BskyClientTestMode(BskyClient):
     def __init__(self, *args, **kwargs):
         kwargs["ignore_cached_session"] = True
         kwargs["skip_call_logging"] = True
+        self.override_budgets = {}
         super().__init__(*args, **kwargs)
+
+    def set_artificial_write_ops_budget(self, hours, budget):
+        self.override_budgets[hours] = budget
+
+    def clear_artificial_write_ops_budget(self, hours):
+        self.override_budgets.pop(hours, None)

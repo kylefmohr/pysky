@@ -39,7 +39,7 @@ In [5]: # wrapper method for bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
 In [6]: profile.displayName
 Out[6]: "It's The Weekend 😌"
 
-In [7]: # this call won't require a call to the API because the record has been saved
+In [7]: # this won't require a call to the API because the record has been saved
    ...: profile = bsky.get_user_profile(profile.handle)
 ```
 

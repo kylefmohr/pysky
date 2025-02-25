@@ -6,8 +6,10 @@ from peewee import fn
 from pysky.models import APICallLog
 
 # https://docs.bsky.app/docs/advanced-guides/rate-limits
-WRITE_OPS_BUDGET_1_HOUR = 5000
-WRITE_OPS_BUDGET_24_HOUR = 35000
+WRITE_OPS_BUDGETS = {
+    1: 5000,
+    24: 35000,
+}
 
 WRITE_OP_POINTS_MAP = {
     "xrpc/com.atproto.repo.createRecord": 3,
@@ -19,47 +21,25 @@ class RateLimitExceeded(Exception):
     pass
 
 
-def check_write_ops_budget():
+def check_write_ops_budget(hours, points_to_use, override_budget=None):
 
-    budget_used_hour = (
+    assert hours in [1,24]
+    budget = override_budget or WRITE_OPS_BUDGETS[hours]
+
+    budget_used = (
         APICallLog.select(fn.sum(APICallLog.write_op_points_consumed))
-        .where(APICallLog.timestamp >= datetime.now(UTC) - timedelta(hours=1))
+        .where(APICallLog.timestamp >= datetime.now(UTC) - timedelta(hours=hours))
         .first()
         .sum
-    )
-    budget_used_day = (
-        APICallLog.select(fn.sum(APICallLog.write_op_points_consumed))
-        .where(APICallLog.timestamp >= datetime.now(UTC) - timedelta(hours=24))
-        .first()
-        .sum
-    )
+    ) + points_to_use
 
-    if budget_used_hour > (0.80 * WRITE_OPS_BUDGET_1_HOUR):
-        pctg = f"{(budget_used_hour/WRITE_OPS_BUDGET_1_HOUR):.2%}"
-        sys.stderr.write(
-            f"over 80% of the hourly write ops budget has been used: {budget_used_hour}/{WRITE_OPS_BUDGET_1_HOUR} ({pctg})\n"
-        )
-
-    if budget_used_day > (0.80 * WRITE_OPS_BUDGET_24_HOUR):
-        pctg = f"{(budget_used_day/WRITE_OPS_BUDGET_24_HOUR):.2%}"
-        sys.stderr.write(
-            f"over 80% of the daily write ops budget has been used: {budget_used_day}/{WRITE_OPS_BUDGET_24_HOUR} ({pctg})\n"
-        )
-
-    if budget_used_hour >= WRITE_OPS_BUDGET_1_HOUR or budget_used_day >= WRITE_OPS_BUDGET_24_HOUR:
+    if budget_used >= budget:
         raise RateLimitExceeded(
-            f"at or exceeded write operations budget: {budget_used_hour}/{WRITE_OPS_BUDGET_1_HOUR} points used in the last hour, {budget_used_day}/{WRITE_OPS_BUDGET_24_HOUR} points used in the last 24 hours"
+            f"This operation would meet or exceed write operations {hours}-hour budget: {budget_used}/{budget} points used"
         )
 
-
-"""
-to do - implement these per minute/per day limits
-[
-    ("*", 3000, 5),
-    ("xrpc/com.atproto.identity.updateHandle", 10, 5, 50),
-    ("xrpc/com.atproto.server.createAccount", 100, 5, None),
-    ("xrpc/com.atproto.server.createSession", 30, 5, 300),
-    ("xrpc/com.atproto.server.deleteAccount", 50, 5, None),
-    ("xrpc/com.atproto.server.resetPassword", 50, 1, None),
-]
-"""
+    if budget_used >= (0.80 * budget):
+        pctg = f"{(budget_used/budget):.2%}"
+        sys.stderr.write(
+            f"Warning: after this operation, over 80% of the {hours}-hour write ops budget will have been used: {budget_used}/{budget} ({pctg})\n"
+        )
