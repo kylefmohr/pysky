@@ -230,8 +230,7 @@ d.execute()
 # preserve rows with cursor values
 d = APICallLog.delete() \
     .where(APICallLog.cursor_received.is_null()) \
-    .where(APICallLog.timestamp < datetime.now(UTC) - timedelta(days=10))
-
+    .where(APICallLog.timestamp < datetime.now(UTC) - timedelta(days=30))
 d.execute()
 ```
 
