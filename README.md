@@ -1,5 +1,5 @@
 # pysky
-A simple Bluesky API library backed by a database to enable some quality of life features:
+A small Bluesky API library backed by a database to enable some quality of life features:
 
 * Automatic session caching/refreshing
 * Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are returned and that each object is only returned once
@@ -44,9 +44,24 @@ In [7]: profile.displayName
 Out[7]: "It's The Weekend 😌"
 ```
 
-This library is fairly minimalist and expects the user to refer to the [official API reference](https://docs.bsky.app/docs/category/http-reference) for endpoint and parameter names. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
+Most interaction with this library happens through just a few different methods:
+
+* Creating a BskyClient object
+* Calling BskyClient.get() and BskyClient.post()
+* There are a few other convenience methods wrapping get() and post():
+    * BskyClient.upload_blob()
+    * BskyClient.create_record()
+    * BskyClient.create_post()
+    * BskyClient.delete_record()
+    * BskyClient.delete_post()
+    * BskyClient.get_convo_logs()
+    * BskyClient.get_user_profile()
+
+This is not meant to be comprehensive, the user is expected to primarily call get/post or provide further wrappers around them. This library is intended to stay small and simple. Refer to the [official API reference](https://docs.bsky.app/docs/category/http-reference) for endpoints and parameters to provide. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
 
 In addition to `endpoint` a `hostname` argument must be provided when the default value of `public.api.bsky.app` is not appropriate.
+
+There are three database tables that can be queried manually or with the Peewee model classes in `pysky.models`.
 
 
 ## POST Examples:

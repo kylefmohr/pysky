@@ -14,6 +14,9 @@ WRITE_OP_POINTS_MAP = {
     "xrpc/com.atproto.repo.deleteRecord": 1,
 }
 
+class RateLimitExceeded(Exception):
+    pass
+
 
 def check_write_ops_budget():
 

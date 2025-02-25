@@ -8,7 +8,7 @@ from datetime import datetime
 import requests
 
 from pysky.models import BskySession, BskyUserProfile, APICallLog
-from pysky.settings import AUTH_USERNAME, AUTH_PASSWORD
+from pysky.settings import BSKY_AUTH_USERNAME, BSKY_AUTH_PASSWORD
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 
 HOSTNAME_PUBLIC = "public.api.bsky.app"
@@ -19,19 +19,33 @@ SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
 ZERO_CURSOR = "2222222222222"
 
 
-class ExcessiveIteration(Exception):
+class APIError(Exception):
+
+    def __init__(self, message, apilog):
+        self.message = message
+        self.apilog = apilog
+
+
+class NotAuthenticated(Exception):
     pass
 
-
-class RateLimitExceeded(Exception):
+class ExcessiveIteration(Exception):
     pass
 
 
 class BskyClient(object):
 
-    def __init__(self):
+    def __init__(self, ignore_cached_session=False, skip_call_logging=False):
+        self.auth_header = {}
+        self.skip_call_logging = skip_call_logging
+        self.bsky_auth_username = BSKY_AUTH_USERNAME
+        self.bsky_auth_password = BSKY_AUTH_PASSWORD
         try:
-            self.load_serialized_session()
+            if ignore_cached_session:
+                if self.bsky_auth_username and self.bsky_auth_password:
+                    self.create_session()
+            else:
+                self.load_serialized_session()
         except Exception as e:
             self.create_session()
 
@@ -117,31 +131,25 @@ class BskyClient(object):
 
     def create_session(self, method=SESSION_METHOD_CREATE):
 
-        try:
-            if method == SESSION_METHOD_CREATE:
-                session = self.post(
-                    endpoint="xrpc/com.atproto.server.createSession",
-                    auth_method=AUTH_METHOD_PASSWORD,
-                    hostname=HOSTNAME_ENTRYWAY,
-                )
-            elif method == SESSION_METHOD_REFRESH:
-                session = self.post(
-                    endpoint="xrpc/com.atproto.server.refreshSession",
-                    use_refresh_token=True,
-                    hostname=HOSTNAME_ENTRYWAY,
-                )
-            self.exception = None
-            self.accessJwt = session.accessJwt
-            self.refreshJwt = session.refreshJwt
-            self.did = session.did
-        except Exception as e:
-            self.exception = f"{e.__class__.__name__} - {e}"
-
+        if method == SESSION_METHOD_CREATE:
+            session = self.post(
+                endpoint="xrpc/com.atproto.server.createSession",
+                auth_method=AUTH_METHOD_PASSWORD,
+                hostname=HOSTNAME_ENTRYWAY,
+            )
+        elif method == SESSION_METHOD_REFRESH:
+            session = self.post(
+                endpoint="xrpc/com.atproto.server.refreshSession",
+                use_refresh_token=True,
+                hostname=HOSTNAME_ENTRYWAY,
+            )
+        self.exception = None
+        self.accessJwt = session.accessJwt
+        self.refreshJwt = session.refreshJwt
+        self.did = session.did
         self.create_method = method
         self.created_at = datetime.now().isoformat()
-
         self.serialize()
-
         self.set_auth_header()
 
     def set_auth_header(self):
@@ -157,8 +165,8 @@ class BskyClient(object):
         bs.save()
 
     def load_serialized_session(self):
-        db_session = BskySession.select().order_by(BskySession.created_at.desc())[0]
-        self.__dict__ = db_session.__dict__["__data__"]
+        db_session = BskySession.select().where(BskySession.exception.is_null()).order_by(BskySession.created_at.desc())[0]
+        self.__dict__.update(db_session.__dict__["__data__"])
         self.set_auth_header()
 
     def call_with_session_refresh(self, method, uri, args):
@@ -186,7 +194,6 @@ class BskyClient(object):
         use_refresh_token=False,
         data=None,
         headers=None,
-        skip_log=False,
     ):
 
         uri = f"https://{hostname}/{endpoint}"
@@ -206,6 +213,8 @@ class BskyClient(object):
         args = {}
         args["headers"] = headers or {}
         if hostname != HOSTNAME_PUBLIC:
+            if not self.auth_header:
+                raise NotAuthenticated("Invalid request in unauthenticated mode")
             args["headers"].update(self.auth_header)
 
         params = params or {}
@@ -213,7 +222,7 @@ class BskyClient(object):
         if auth_method == AUTH_METHOD_TOKEN and use_refresh_token:
             args["headers"].update({"Authorization": f"Bearer {self.refreshJwt}"})
         elif auth_method == AUTH_METHOD_PASSWORD:
-            args["json"] = {"identifier": AUTH_USERNAME, "password": AUTH_PASSWORD}
+            args["json"] = {"identifier": self.bsky_auth_username, "password": self.bsky_auth_password}
 
         if params and method == requests.get:
             args["params"] = params
@@ -250,12 +259,12 @@ class BskyClient(object):
             call_exception = None
         except Exception as e:
             r = None
-            apilog.exception_class = __class__.__name__
+            apilog.exception_class = e.__class__.__name__
             apilog.exception_text = str(e)
             response_object = SimpleNamespace()
             call_exception = e
 
-        if not skip_log:
+        if not self.skip_call_logging:
             apilog.save()
 
         err_prefix = None
@@ -264,14 +273,15 @@ class BskyClient(object):
         elif apilog.http_status_code >= 400:
             err_prefix = f"Bluesky API returned HTTP {apilog.http_status_code}"
 
-        if err_prefix:
+        if err_prefix and not self.skip_call_logging:
             sys.stderr.write(
                 f"{err_prefix}\nFor more details run the query:\nSELECT * FROM api_call_log WHERE id={apilog.id};\n"
             )
 
         if apilog.http_status_code and apilog.http_status_code >= 400:
-            raise Exception(
-                f"Failed request, status code {apilog.http_status_code} ({getattr(apilog, 'exception_class', '')})"
+            raise APIError(
+                f"Failed request, status code {apilog.http_status_code} ({getattr(apilog, 'exception_class', '')})",
+                apilog
             )
 
         if isinstance(call_exception, Exception):
@@ -297,10 +307,7 @@ class BskyClient(object):
 
     @staticmethod
     def is_expired_token_response(r):
-        try:
-            return r.status_code == 400 and r.json()["error"] == "ExpiredToken"
-        except:
-            return False
+        return r.status_code == 400 and r.json()["error"] == "ExpiredToken"
 
     def upload_blob(self, blob_data, mimetype, hostname=HOSTNAME_ENTRYWAY):
         return self.post(
@@ -365,3 +372,11 @@ class BskyClient(object):
             user.display_name = getattr(response, "displayName", None)
             user.save()
             return user
+
+
+class BskyClientTestMode(BskyClient):
+
+    def __init__(self, *args, **kwargs):
+        kwargs["ignore_cached_session"] = True
+        kwargs["skip_call_logging"] = True
+        super().__init__(*args, **kwargs)
