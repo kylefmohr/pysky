@@ -424,7 +424,9 @@ class BskyClient(object):
         except (BskyUserProfile.DoesNotExist, AssertionError):
             endpoint = "xrpc/app.bsky.actor.getProfile"
             response = self.get(endpoint=endpoint, params={"actor": actor})
-            user, _ = BskyUserProfile.get_or_create(did=response.did)
+            user = BskyUserProfile.get_or_none(BskyUserProfile.did==response.did)
+            if not user:
+                user = BskyUserProfile(did=response.did)
             user.handle = response.handle
             user.display_name = getattr(response, "displayName", None)
             user.save()
