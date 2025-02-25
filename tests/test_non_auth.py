@@ -53,5 +53,7 @@ def test_non_authenticated_failure():
                              endpoint="xrpc/com.atproto.repo.createRecord",
                              params=params)
         raise Exception("NotAuthenticated exception was not raised")
-    except Exception as e:
-        assert isinstance(e, pysky.NotAuthenticated)
+    except pysky.NotAuthenticated as e:
+        assert "no bsky credentials set" in str(e)
+    except:
+        raise Exception("NotAuthenticated exception was not raised")
