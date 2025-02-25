@@ -167,11 +167,11 @@ The response is otherwise unmodified, so refer to the [API docs](https://docs.bs
 
 ## Session Management
 
-Behind the scenes, the `BskyClient` constructor checks the database for the most recent cached session, an accessJwt/refreshJwt pair serialized to the table `bsky_session`. If none exist, a session is created and saved to the table.
+Upon the first attempted request to a hostname other than the public `public.api.bsky.app`, `BskyClient` checks the database for the most recent cached session, an accessJwt/refreshJwt pair serialized to the table `bsky_session`. If none exist and the `BSKY_AUTH_USERNAME/BSKY_AUTH_PASSWORD` environment variables are set, a session is established and saved to the table. If the credentials aren't set, a `pysky.NotAuthenticated` exception will be raised.
 
-If a session is found in the database, the Bluesky API is not called to establish a new session. If on the first (or any subsequent) use of this session the API responds with an `ExpiredToken` error, a new session is established and saved to `bsky_session`. The API call is automatically repeated with the new token.
+If on the first (or any subsequent) use of the current session the API responds with an `ExpiredToken` error, a new session is established and saved to `bsky_session`. The API call that was interrupted by the expiration is automatically repeated with the new session.
 
-If the default public hostname (public.api.bsky.app) is being called, the auth header is not sent in the request.
+If a request is made to the default public hostname `public.api.bsky.app` then the session headers, if a session has been established, are not sent in the request.
 
 ## Database Logging
 
@@ -310,6 +310,6 @@ Note that handles and display names that are updated on Bluesky won't be seen if
 
 ## Rate Limit Monitoring
 
-Before each API call that would trigger a write and incur a cost against the hourly/daily rate limit budget, the cost of prior calls is checked in the database to ensure that the limit will not be exceeded. If it would be, a `RateLimitExceeded` exception is raised. A warning is printed to sys.stderr if 75% of the hourly or daily budget has been used.
+Before each API call that would trigger a write and incur a cost against the hourly/daily rate limit budget, the cost of prior calls is checked in the database to ensure that the limit will not be exceeded. If it would be, a `RateLimitExceeded` exception is raised. A warning is printed to sys.stderr if more than 80% of the hourly or daily budget has been used.
 
 See: https://docs.bsky.app/docs/advanced-guides/rate-limits
