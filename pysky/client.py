@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 import json
@@ -8,7 +9,6 @@ from datetime import datetime
 import requests
 
 from pysky.models import BskySession, BskyUserProfile, APICallLog
-from pysky.settings import BSKY_AUTH_USERNAME, BSKY_AUTH_PASSWORD
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 
 HOSTNAME_PUBLIC = "public.api.bsky.app"
@@ -38,17 +38,16 @@ class BskyClient(object):
 
     def __init__(self, ignore_cached_session=False, skip_call_logging=False):
         self.auth_header = {}
+        self.ignore_cached_session = ignore_cached_session
         self.skip_call_logging = skip_call_logging
-        self.bsky_auth_username = BSKY_AUTH_USERNAME
-        self.bsky_auth_password = BSKY_AUTH_PASSWORD
+
         try:
-            if ignore_cached_session:
-                if self.bsky_auth_username and self.bsky_auth_password:
-                    self.create_session()
-            else:
-                self.load_serialized_session()
-        except Exception as e:
-            self.create_session()
+            self.bsky_auth_username = os.environ["BSKY_AUTH_USERNAME"]
+            self.bsky_auth_password = os.environ["BSKY_AUTH_PASSWORD"]
+        except KeyError:
+            self.bsky_auth_username = ""
+            self.bsky_auth_password = ""
+
 
     def process_cursor(func, **kwargs):
         """Decorator for any api call that returns a cursor, this looks up the previous
@@ -130,9 +129,27 @@ class BskyClient(object):
 
         return responses, kwargs["cursor"]
 
+
+    def load_or_create_session(self):
+
+        session = None
+
+        if not self.ignore_cached_session:
+            session = self.load_serialized_session()
+
+        if not session:
+            session = self.create_session()
+
+        return session
+
+
     def create_session(self, method=SESSION_METHOD_CREATE):
 
         if method == SESSION_METHOD_CREATE:
+
+            if not self.bsky_auth_username or not self.bsky_auth_password:
+                raise NotAuthenticated("Invalid request in unauthenticated mode, no bsky credentials set")
+
             session = self.post(
                 endpoint="xrpc/com.atproto.server.createSession",
                 auth_method=AUTH_METHOD_PASSWORD,
@@ -151,10 +168,11 @@ class BskyClient(object):
         self.create_method = method
         self.created_at = datetime.now().isoformat()
         self.serialize()
-        self.set_auth_header()
+        return self.set_auth_header()
 
     def set_auth_header(self):
         self.auth_header = {"Authorization": f"Bearer {self.accessJwt}"}
+        return self.auth_header
 
     def refresh_session(self):
         self.create_session(method=SESSION_METHOD_REFRESH)
@@ -166,13 +184,16 @@ class BskyClient(object):
         bs.save()
 
     def load_serialized_session(self):
-        db_session = (
-            BskySession.select()
-            .where(BskySession.exception.is_null())
-            .order_by(BskySession.created_at.desc())[0]
-        )
-        self.__dict__.update(db_session.__dict__["__data__"])
-        self.set_auth_header()
+        try:
+            db_session = (
+                BskySession.select()
+                .where(BskySession.exception.is_null())
+                .order_by(BskySession.created_at.desc())[0]
+            )
+            self.__dict__.update(db_session.__dict__["__data__"])
+            return self.set_auth_header()
+        except IndexError:
+            return None
 
     def call_with_session_refresh(self, method, uri, args):
 
@@ -217,10 +238,26 @@ class BskyClient(object):
 
         args = {}
         args["headers"] = headers or {}
-        if hostname != HOSTNAME_PUBLIC:
-            if not self.auth_header:
-                raise NotAuthenticated("Invalid request in unauthenticated mode")
-            args["headers"].update(self.auth_header)
+
+        request_requires_auth = hostname != HOSTNAME_PUBLIC
+
+        if request_requires_auth:
+
+            if auth_method == AUTH_METHOD_TOKEN and not self.auth_header:
+                # prevent request from happening without a valid session
+                self.load_or_create_session()
+
+            elif auth_method == AUTH_METHOD_PASSWORD:
+                # allow request to happen in order to establish a valid session
+                pass
+
+            # if still no session and using token auth, there's a problem
+            if auth_method == AUTH_METHOD_TOKEN and not self.auth_header:
+                raise NotAuthenticated(f"Invalid request in unauthenticated mode, no auth header ({hostname}) ({endpoint})")
+
+            # add auth header if appropriate
+            if auth_method == AUTH_METHOD_TOKEN:
+                args["headers"].update(self.auth_header)
 
         params = params or {}
 
@@ -326,8 +363,14 @@ class BskyClient(object):
         )
 
     def create_record(self, collection, post):
+        try:
+            repo = self.did
+        except AttributeError:
+            self.load_or_create_session()
+            repo = self.did
+
         params = {
-            "repo": self.did,
+            "repo": repo,
             "collection": collection,
             "record": post,
         }
@@ -339,8 +382,14 @@ class BskyClient(object):
         return self.create_record("app.bsky.feed.post", post)
 
     def delete_record(self, collection, rkey):
+        try:
+            repo = self.did
+        except AttributeError:
+            self.load_or_create_session()
+            repo = self.did
+
         params = {
-            "repo": self.did,
+            "repo": repo,
             "collection": collection,
             "rkey": rkey,
         }
