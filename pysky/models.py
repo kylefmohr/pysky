@@ -35,22 +35,6 @@ class BskyUserProfile(BaseModel):
         table_name = "bsky_user_profile"
 
 
-class ConvoMessage(BaseModel):
-    message_id = CharField(unique=True)
-    convo_id = CharField()
-    sender_did = CharField()
-    sender = ForeignKeyField(BskyUserProfile)
-    text = CharField()
-    sent_at = DateTimeField()
-    received_at = DateTimeField(default=datetime.now)
-    processed_at = DateTimeField(null=True)
-    process_error = CharField(null=True)
-    facet_link = CharField()
-
-    class Meta:
-        table_name = "convo_message"
-
-
 class APICallLog(BaseModel):
     timestamp = DateTimeField(default=datetime.now, index=True)
     hostname = CharField()
