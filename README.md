@@ -25,8 +25,7 @@ A small Bluesky API library backed by a database to enable some quality of life 
 ```python
 In [1]: from pysky import BskyClient
 
-In [2]: # create a session
-   ...: bsky = BskyClient()
+In [2]: bsky = BskyClient()
 
 In [3]: profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
                            params={"actor": "did:plc:zcmchxw2gxlbincrchpdjopq"})
@@ -34,14 +33,14 @@ In [3]: profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
 In [4]: profile.handle
 Out[4]: 'craigweekend.bsky.social'
 
-In [5]: profile.postsCount
-Out[5]: 104
-
-In [6]: # wrapper function for bsky.get(endpoint="xrpc/app.bsky.actor.getProfile", ...)
+In [5]: # wrapper method for bsky.get(endpoint="xrpc/app.bsky.actor.getProfile", ...)
    ...: profile = bsky.get_user_profile("did:plc:zcmchxw2gxlbincrchpdjopq")
 
-In [7]: profile.displayName
-Out[7]: "It's The Weekend 😌"
+In [6]: profile.displayName
+Out[6]: "It's The Weekend 😌"
+
+In [7]: # this call won't require a call to the API because the record has been saved
+   ...: profile = bsky.get_user_profile(profile.handle)
 ```
 
 Most interaction with this library happens through just a few different methods:
