@@ -10,9 +10,7 @@ import pysky.models
 
 def get_model_classes():
     class_members = inspect.getmembers(sys.modules["pysky.models"], inspect.isclass)
-    return [
-        (n, cls) for n, cls in class_members if cls.__base__ == pysky.models.BaseModel
-    ]
+    return [(n, cls) for n, cls in class_members if cls.__base__ == pysky.models.BaseModel]
 
 
 def create_non_existing_tables(db):

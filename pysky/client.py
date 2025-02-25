@@ -29,6 +29,7 @@ class APIError(Exception):
 class NotAuthenticated(Exception):
     pass
 
+
 class ExcessiveIteration(Exception):
     pass
 
@@ -165,7 +166,11 @@ class BskyClient(object):
         bs.save()
 
     def load_serialized_session(self):
-        db_session = BskySession.select().where(BskySession.exception.is_null()).order_by(BskySession.created_at.desc())[0]
+        db_session = (
+            BskySession.select()
+            .where(BskySession.exception.is_null())
+            .order_by(BskySession.created_at.desc())[0]
+        )
         self.__dict__.update(db_session.__dict__["__data__"])
         self.set_auth_header()
 
@@ -222,7 +227,10 @@ class BskyClient(object):
         if auth_method == AUTH_METHOD_TOKEN and use_refresh_token:
             args["headers"].update({"Authorization": f"Bearer {self.refreshJwt}"})
         elif auth_method == AUTH_METHOD_PASSWORD:
-            args["json"] = {"identifier": self.bsky_auth_username, "password": self.bsky_auth_password}
+            args["json"] = {
+                "identifier": self.bsky_auth_username,
+                "password": self.bsky_auth_password,
+            }
 
         if params and method == requests.get:
             args["params"] = params
@@ -281,7 +289,7 @@ class BskyClient(object):
         if apilog.http_status_code and apilog.http_status_code >= 400:
             raise APIError(
                 f"Failed request, status code {apilog.http_status_code} ({getattr(apilog, 'exception_class', '')})",
-                apilog
+                apilog,
             )
 
         if isinstance(call_exception, Exception):
