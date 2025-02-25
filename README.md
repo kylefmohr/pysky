@@ -98,7 +98,7 @@ response = bsky.post(data=blob_data,
 There's also an `upload_blob()` wrapper method for this:
 
 ```python
-image_bytes = open("file.png", rb").read()
+image_bytes = open("file.png", "rb").read()
 response = bsky.upload_blob(blob_data=image_bytes, mimetype="image/png")
 ```
 
@@ -217,6 +217,23 @@ duration_microseconds    | 18380
 ```
 
 Note that this library only appends to this table, so the responsibility is on the user to prune or archive the table as needed to keep it from growing too large. However, see the next section about cursor management. Rows with cursor data should be retained if that feature is important.
+
+Here's how to truncate old rows from the table with Peewee:
+
+```
+from datetime import datetime, timedelta, UTC
+
+d = APICallLog.delete() \
+    .where(APICallLog.timestamp < datetime.now(UTC) - timedelta(days=30))
+d.execute()
+
+# preserve rows with cursor values
+d = APICallLog.delete() \
+    .where(APICallLog.cursor_received.is_null()) \
+    .where(APICallLog.timestamp < datetime.now(UTC) - timedelta(days=10))
+
+d.execute()
+```
 
 ## Cursor Management
 
