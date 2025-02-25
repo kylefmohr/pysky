@@ -46,16 +46,16 @@ Out[7]: "It's The Weekend 😌"
 
 Most interaction with this library happens through just a few different methods:
 
-* Creating a BskyClient object
-* Calling BskyClient.get() and BskyClient.post()
-* There are a few other convenience methods wrapping get() and post():
-    * BskyClient.upload_blob()
-    * BskyClient.create_record()
-    * BskyClient.create_post()
-    * BskyClient.delete_record()
-    * BskyClient.delete_post()
-    * BskyClient.get_convo_logs()
-    * BskyClient.get_user_profile()
+* Creating a `BskyClient` object
+* Calling `BskyClient.get()` and `BskyClient.post()`
+* There are a few other convenience methods wrapping `get()` and `post()`:
+    * `BskyClient.upload_blob()`
+    * `BskyClient.create_record()`
+    * `BskyClient.create_post()`
+    * `BskyClient.delete_record()`
+    * `BskyClient.delete_post()`
+    * `BskyClient.get_convo_logs()`
+    * `BskyClient.get_user_profile()`
 
 This is not meant to be comprehensive, the user is expected to primarily call get/post or provide further wrappers around them. This library is intended to stay small and simple. Refer to the [official API reference](https://docs.bsky.app/docs/category/http-reference) for endpoints and parameters to provide. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
 
