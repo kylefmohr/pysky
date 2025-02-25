@@ -220,7 +220,7 @@ Note that this library only appends to this table, so the responsibility is on t
 
 Here's how to truncate old rows from the table with Peewee:
 
-```
+```python
 from datetime import datetime, timedelta, UTC
 
 d = APICallLog.delete() \
