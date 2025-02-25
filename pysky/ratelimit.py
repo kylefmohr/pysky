@@ -34,14 +34,16 @@ def check_write_ops_budget():
         .sum
     )
 
-    if budget_used_hour > (0.75 * WRITE_OPS_BUDGET_1_HOUR):
+    if budget_used_hour > (0.80 * WRITE_OPS_BUDGET_1_HOUR):
+        pctg = f"{(budget_used_hour/WRITE_OPS_BUDGET_1_HOUR):.2%}"
         sys.stderr.write(
-            f"over 75% of the hourly write ops budget has been used: {budget_used_hour}/{WRITE_OPS_BUDGET_1_HOUR}\n"
+            f"over 80% of the hourly write ops budget has been used: {budget_used_hour}/{WRITE_OPS_BUDGET_1_HOUR} ({pctg})\n"
         )
 
-    if budget_used_day > (0.75 * WRITE_OPS_BUDGET_24_HOUR):
+    if budget_used_day > (0.80 * WRITE_OPS_BUDGET_24_HOUR):
+        pctg = f"{(budget_used_day/WRITE_OPS_BUDGET_24_HOUR):.2%}"
         sys.stderr.write(
-            f"over 75% of the daily write ops budget has been used: {budget_used_day}/{WRITE_OPS_BUDGET_24_HOUR}\n"
+            f"over 80% of the daily write ops budget has been used: {budget_used_day}/{WRITE_OPS_BUDGET_24_HOUR} ({pctg})\n"
         )
 
     if budget_used_hour >= WRITE_OPS_BUDGET_1_HOUR or budget_used_day >= WRITE_OPS_BUDGET_24_HOUR:
