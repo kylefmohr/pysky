@@ -13,7 +13,7 @@ def test_endpoint_404_failure():
         assert e.apilog.http_status_code == 404
         return
     except:
-        raise Exception("APIError exception was not raised")    
+        raise Exception("APIError exception was not raised")
 
     assert False
 
@@ -30,6 +30,4 @@ def test_endpoint_404_failure_2():
         assert e.apilog.http_status_code == 404
         return
     except:
-        raise Exception("APIError exception was not raised")    
-
-
+        raise Exception("APIError exception was not raised")

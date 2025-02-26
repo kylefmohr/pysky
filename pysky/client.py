@@ -48,7 +48,6 @@ class BskyClient(object):
             self.bsky_auth_username = ""
             self.bsky_auth_password = ""
 
-
     def process_cursor(func, **kwargs):
         """Decorator for any api call that returns a cursor, this looks up the previous
         cursor from the database, applies it to the call, and saves the newly returned
@@ -129,7 +128,6 @@ class BskyClient(object):
 
         return responses, kwargs["cursor"]
 
-
     def load_or_create_session(self):
 
         session = None
@@ -142,13 +140,14 @@ class BskyClient(object):
 
         return session
 
-
     def create_session(self, method=SESSION_METHOD_CREATE):
 
         if method == SESSION_METHOD_CREATE:
 
             if not self.bsky_auth_username or not self.bsky_auth_password:
-                raise NotAuthenticated("Invalid request in unauthenticated mode, no bsky credentials set")
+                raise NotAuthenticated(
+                    "Invalid request in unauthenticated mode, no bsky credentials set"
+                )
 
             session = self.post(
                 endpoint="xrpc/com.atproto.server.createSession",
@@ -226,8 +225,16 @@ class BskyClient(object):
 
         write_op_points_cost = WRITE_OP_POINTS_MAP.get(endpoint, 0)
         if write_op_points_cost > 0:
-            check_write_ops_budget(hours=1, points_to_use=write_op_points_cost, override_budget=getattr(self, "override_budgets", {}).get(1))
-            check_write_ops_budget(hours=24, points_to_use=write_op_points_cost, override_budget=getattr(self, "override_budgets", {}).get(24))
+            check_write_ops_budget(
+                hours=1,
+                points_to_use=write_op_points_cost,
+                override_budget=getattr(self, "override_budgets", {}).get(1),
+            )
+            check_write_ops_budget(
+                hours=24,
+                points_to_use=write_op_points_cost,
+                override_budget=getattr(self, "override_budgets", {}).get(24),
+            )
 
         apilog = APICallLog(
             endpoint=endpoint,
@@ -254,7 +261,9 @@ class BskyClient(object):
 
             # if still no session and using token auth, there's a problem
             if auth_method == AUTH_METHOD_TOKEN and not self.auth_header:
-                raise NotAuthenticated(f"Invalid request in unauthenticated mode, no auth header ({hostname}) ({endpoint})")
+                raise NotAuthenticated(
+                    f"Invalid request in unauthenticated mode, no auth header ({hostname}) ({endpoint})"
+                )
 
             # add auth header if appropriate
             if auth_method == AUTH_METHOD_TOKEN:
