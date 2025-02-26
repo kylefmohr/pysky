@@ -178,40 +178,40 @@ All API calls are logged to the `api_call_log` table. Exception data on unsucces
 ```python
 In [1]: response = bsky.get(endpoint="xrpc/app.bsky.feed.searchPosts",
    ...:                     hostname="bsky.social",
-   ...:                     params={"q": "", "mentions": "handle"})
-InvalidRequest - Error: Params must have the property "q"
-For more details run the query:
-SELECT * FROM api_call_log WHERE id=152638;
+   ...:                     params={"mentions": "handle"})
+
+2025-02-25 10:00:06 - pysky - ERROR - InvalidRequest - Error: Params must have the property "q"
+2025-02-25 10:00:06 - pysky - ERROR - For more details run the query: SELECT * FROM api_call_log WHERE id=198960;
 ---------------------------------------------------------------------------
-Exception                                 Traceback (most recent call last)
+APIError                                  Traceback (most recent call last)
 Cell In[1], line 1
 ----> 1 response = bsky.get(endpoint="xrpc/app.bsky.feed.searchPosts",
       2                     hostname="bsky.social",
-      3                     params={"q": "", "mentions": "handle"})
+      3                     params={"mentions": "handle"})
 ...
 ```
 
-Note the log message indicating the query to run in order to see the full record for the error.
+Note the message to the "pysky" logger giving the query to show the full record for the request.
 
 ```
-stroma=# SELECT * FROM api_call_log WHERE id=152638;
+stroma=# SELECT * FROM api_call_log WHERE id=198960;
 -[ RECORD 1 ]------------+----------------------------------------------------------------------------------
-id                       | 152638
-timestamp                | 2025-02-23 16:45:30.715534-05
+id                       | 198960
+timestamp                | 2025-02-25 10:00:05.969271-05
 hostname                 | bsky.social
 endpoint                 | xrpc/app.bsky.feed.searchPosts
 cursor_passed            |
 cursor_received          |
 method                   | get
 http_status_code         | 400
-params                   | {"q": "", "mentions": "handle"}
+params                   | {"mentions": "handle"}
 exception_class          | InvalidRequest
 exception_text           | Error: Params must have the property "q"
 exception_response       | {"error":"InvalidRequest","message":"Error: Params must have the property \"q\""}
 response_keys            | error,message
 write_op_points_consumed | 0
 session_was_refreshed    | f
-duration_microseconds    | 18380
+duration_microseconds    | 16637
 ```
 
 Note that this library only appends to this table, so the responsibility is on the user to prune or archive the table as needed to keep it from growing too large. However, see the next section about cursor management. Rows with cursor data should be retained if that feature is important.

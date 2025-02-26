@@ -330,8 +330,8 @@ class BskyClient(object):
             err_prefix = f"Bluesky API returned HTTP {apilog.http_status_code}"
 
         if err_prefix and not self.skip_call_logging:
-            log.warning(err_prefix)
-            log.warning(f"For more details run the query: SELECT * FROM api_call_log WHERE id={apilog.id};")
+            log.error(err_prefix)
+            log.error(f"For more details run the query: SELECT * FROM api_call_log WHERE id={apilog.id};")
 
         if apilog.http_status_code and apilog.http_status_code >= 400:
             raise APIError(
