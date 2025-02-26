@@ -3,7 +3,6 @@ A small Bluesky API library backed by a database to enable some quality of life 
 
 * Automatic session caching/refreshing
 * Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are returned and that each object is only returned once
-* Pagination - receive all pages of results with one call
 * Logging - metadata for all API calls and responses (including exceptions) is stored in the database
 * Cached user profiles for local DID/handle lookups
 
