@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+import pytest
+
 import pysky
 
 
@@ -19,14 +21,7 @@ def test_rate_limit():
         },
     }
 
-    try:
+    with pytest.raises(pysky.RateLimitExceeded):
         response = bsky.post(
             hostname="bsky.social", endpoint="xrpc/com.atproto.repo.createRecord", params=params
         )
-        assert False
-    except pysky.RateLimitExceeded:
-        return
-    except Exception as e:
-        assert False
-
-    assert False

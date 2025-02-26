@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timezone
 from contextlib import contextmanager
 
+import pytest
 
 @contextmanager
 def unset_env_vars(var_names):
@@ -51,15 +52,12 @@ def test_non_authenticated_failure():
         },
     }
 
-    try:
-        import pysky
+    import pysky
 
+    with pytest.raises(pysky.NotAuthenticated) as e:
         bsky = pysky.BskyClientTestMode()
         response = bsky.post(
             hostname="bsky.social", endpoint="xrpc/com.atproto.repo.createRecord", params=params
         )
-        raise Exception("NotAuthenticated exception was not raised")
-    except pysky.NotAuthenticated as e:
-        assert "no bsky credentials set" in str(e)
-    except:
-        raise Exception("NotAuthenticated exception was not raised")
+
+    assert "no bsky credentials set" in str(e.value)
