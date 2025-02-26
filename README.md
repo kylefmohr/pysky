@@ -181,7 +181,8 @@ In [1]: response = bsky.get(endpoint="xrpc/app.bsky.feed.searchPosts",
    ...:                     params={"mentions": "handle"})
 
 2025-02-25 10:00:06 - pysky - ERROR - InvalidRequest - Error: Params must have the property "q"
-2025-02-25 10:00:06 - pysky - ERROR - For more details run the query: SELECT * FROM api_call_log WHERE id=198960;
+2025-02-25 10:00:06 - pysky - ERROR - For more details run the query:
+2025-02-25 10:00:06 - pysky - ERROR - SELECT * FROM api_call_log WHERE id=198960;
 ---------------------------------------------------------------------------
 APIError                                  Traceback (most recent call last)
 Cell In[1], line 1

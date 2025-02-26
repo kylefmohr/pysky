@@ -331,7 +331,8 @@ class BskyClient(object):
 
         if err_prefix and not self.skip_call_logging:
             log.error(err_prefix)
-            log.error(f"For more details run the query: SELECT * FROM api_call_log WHERE id={apilog.id};")
+            log.error("For more details run the query:")
+            log.error(f"SELECT * FROM api_call_log WHERE id={apilog.id};")
 
         if apilog.http_status_code and apilog.http_status_code >= 400:
             raise APIError(
