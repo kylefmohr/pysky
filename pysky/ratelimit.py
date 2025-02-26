@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, UTC
 
 from peewee import fn
 
+from pysky.logging import log
 from pysky.models import APICallLog
 
 # https://docs.bsky.app/docs/advanced-guides/rate-limits
@@ -38,8 +39,8 @@ def check_write_ops_budget(hours, points_to_use, override_budget=None):
             f"This operation would meet or exceed write operations {hours}-hour budget: {budget_used}/{budget} points used"
         )
 
-    if budget_used >= (0.80 * budget):
+    if budget_used > (0.95 * budget):
         pctg = f"{(budget_used/budget):.2%}"
-        sys.stderr.write(
-            f"Warning: after this operation, over 80% of the {hours}-hour write ops budget will have been used: {budget_used}/{budget} ({pctg})\n"
+        log.warning(
+            f"Over 95% of the {hours}-hour write ops budget has been used: {budget_used}/{budget} ({pctg})"
         )

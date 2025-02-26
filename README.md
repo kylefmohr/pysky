@@ -308,6 +308,6 @@ Note that handles and display names that are updated on Bluesky won't be seen if
 
 ## Rate Limit Monitoring
 
-Before each API call that would trigger a write and incur a cost against the hourly/daily rate limit budget, the cost of prior calls is checked in the database to ensure that the limit will not be exceeded. If it would be, a `RateLimitExceeded` exception is raised. A warning is printed to sys.stderr if more than 80% of the hourly or daily budget has been used.
+Before each API call that would trigger a write and incur a cost against the hourly/daily rate limit budget, the cost of prior calls is checked in the database to ensure that the limit will not be exceeded. If it would be, a `pysky.RateLimitExceeded` exception is raised. A warning is logged to the "pysky" logger if more than 95% of the hourly or daily budget has been used.
 
 See: https://docs.bsky.app/docs/advanced-guides/rate-limits

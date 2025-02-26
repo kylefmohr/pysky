@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from datetime import datetime
 import requests
 
+from pysky.logging import log
 from pysky.models import BskySession, BskyUserProfile, APICallLog
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 
@@ -329,9 +330,8 @@ class BskyClient(object):
             err_prefix = f"Bluesky API returned HTTP {apilog.http_status_code}"
 
         if err_prefix and not self.skip_call_logging:
-            sys.stderr.write(
-                f"{err_prefix}\nFor more details run the query:\nSELECT * FROM api_call_log WHERE id={apilog.id};\n"
-            )
+            log.warning(err_prefix)
+            log.warning(f"For more details run the query: SELECT * FROM api_call_log WHERE id={apilog.id};")
 
         if apilog.http_status_code and apilog.http_status_code >= 400:
             raise APIError(
