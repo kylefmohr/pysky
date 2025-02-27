@@ -19,6 +19,8 @@ AUTH_METHOD_PASSWORD, AUTH_METHOD_TOKEN = range(2)
 SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
 ZERO_CURSOR = "2222222222222"
 
+class RefreshSessionRecursion(Exception):
+    pass
 
 class APIError(Exception):
 
@@ -175,6 +177,10 @@ class BskyClient(object):
         return self.auth_header
 
     def refresh_session(self):
+        # i can't reproduce it, but once i saw a "maximum recursion depth exceeded"
+        # exception here. i added this code to check for it.
+        if [f.function for f in inspect.stack()].count('refresh_session') > 1:
+            raise RefreshSessionRecursion(f"refresh_session recursion: {','.join(f.function for f in inspect.stack())}")
         self.create_session(method=SESSION_METHOD_REFRESH)
 
     def serialize(self):
@@ -314,6 +320,10 @@ class BskyClient(object):
             apilog.cursor_received = getattr(response_object, "cursor", None)
             call_exception = None
         except Exception as e:
+
+            if isinstance(e, RefreshSessionRecursion):
+                raise
+
             r = None
             apilog.exception_class = e.__class__.__name__
             apilog.exception_text = str(e)
