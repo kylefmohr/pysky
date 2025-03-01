@@ -17,7 +17,11 @@ HOSTNAME_ENTRYWAY = "bsky.social"
 HOSTNAME_CHAT = "api.bsky.chat"
 AUTH_METHOD_PASSWORD, AUTH_METHOD_TOKEN = range(2)
 SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
+
 ZERO_CURSOR = "2222222222222"
+INITIAL_CURSOR = {
+    "xrpc/chat.bsky.convo.getLog": ZERO_CURSOR,
+}
 
 class RefreshSessionRecursion(Exception):
     pass
@@ -76,8 +80,9 @@ class BskyClient(object):
                     .order_by(APICallLog.timestamp.desc())
                     .first()
                 )
+                initial_cursor = INITIAL_CURSOR.get(endpoint)
                 kwargs["cursor"] = (
-                    previous_db_cursor.cursor_received if previous_db_cursor else ZERO_CURSOR
+                    previous_db_cursor.cursor_received if previous_db_cursor else initial_cursor
                 )
 
             if paginate:
@@ -85,7 +90,10 @@ class BskyClient(object):
                 response = self.combine_paginated_responses(responses, collection_attr)
             else:
                 response = func(self, **kwargs)
-                final_cursor = response.cursor
+                # with some endpoints the cursor is returned with the response
+                # at eof, and with others the cursor attribute is not present
+                # in the response
+                final_cursor = getattr(response, "cursor", kwargs["cursor"])
 
             return response
 
@@ -120,7 +128,7 @@ class BskyClient(object):
             responses.append(response)
 
             try:
-                new_cursor = response.cursor
+                new_cursor = getattr(response, "cursor", kwargs["cursor"])
                 if new_cursor == kwargs["cursor"]:
                     break
 
@@ -383,15 +391,16 @@ class BskyClient(object):
             hostname=hostname,
         )
 
-    def create_record(self, collection, post):
+    def get_did(self):
         try:
-            repo = self.did
+            return self.did
         except AttributeError:
             self.load_or_create_session()
-            repo = self.did
+            return self.did
 
+    def create_record(self, collection, post):
         params = {
-            "repo": repo,
+            "repo": self.get_did(),
             "collection": collection,
             "record": post,
         }
@@ -403,14 +412,8 @@ class BskyClient(object):
         return self.create_record("app.bsky.feed.post", post)
 
     def delete_record(self, collection, rkey):
-        try:
-            repo = self.did
-        except AttributeError:
-            self.load_or_create_session()
-            repo = self.did
-
         params = {
-            "repo": repo,
+            "repo": self.get_did(),
             "collection": collection,
             "rkey": rkey,
         }
@@ -422,6 +425,20 @@ class BskyClient(object):
         return self.delete_record("app.bsky.feed.post", post_id)
 
     @process_cursor
+    def get_blocks(
+        self,
+        endpoint="xrpc/com.atproto.repo.listRecords",
+        cursor=None,
+        collection_attr="records",
+        paginate=True,
+    ):
+        return self.get(
+            hostname=HOSTNAME_ENTRYWAY,
+            endpoint=endpoint,
+            params={"cursor": cursor, "repo": self.get_did(), "collection": "app.bsky.graph.block"}
+        )
+
+    @process_cursor
     def get_convo_logs(
         self,
         endpoint="xrpc/chat.bsky.convo.getLog",
@@ -429,7 +446,7 @@ class BskyClient(object):
         collection_attr="logs",
         paginate=True,
     ):
-        # cursor usage notes: https://github.com/bluesky-social/atproto/issues/2760
+        # cursor usage notes: https://github.com/bluesky-social/atproto/issues/2760 (specific to this endpoint)
         return self.get(hostname=HOSTNAME_CHAT, endpoint=endpoint, params={"cursor": cursor})
 
     def get_user_profile(self, actor, force_remote_call=False):
