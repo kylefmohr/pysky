@@ -29,7 +29,7 @@ def test_db_state_2_insert(bsky):
     assert prof.id == 1
 
 
-def test_db_state_3_insert_worked(bsky):
+def test_db_state_3_insert_visible_across_tests(bsky):
     from pysky.models import BskyUserProfile
 
     cnt = BskyUserProfile.select().count()
