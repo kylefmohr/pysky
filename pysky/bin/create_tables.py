@@ -4,7 +4,6 @@ from datetime import datetime
 
 from peewee import Model
 
-from pysky.database import db
 import pysky.models
 
 
@@ -32,4 +31,5 @@ def create_non_existing_tables(db):
 if __name__=="__main__":
 
     # create missing tables:
+    from pysky.database import db
     create_non_existing_tables(db)
