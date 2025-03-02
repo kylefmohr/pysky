@@ -11,6 +11,7 @@ import requests
 from pysky.logging import log
 from pysky.models import BskySession, BskyUserProfile, APICallLog
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
+from pysky.bin.create_tables import create_non_existing_tables
 
 HOSTNAME_PUBLIC = "public.api.bsky.app"
 HOSTNAME_ENTRYWAY = "bsky.social"
@@ -477,6 +478,8 @@ class BskyClientTestMode(BskyClient):
         kwargs["ignore_cached_session"] = True
         kwargs["skip_call_logging"] = True
         self.override_budgets = {}
+        self.database = BskySession._meta.database
+        create_non_existing_tables(self.database)
         super().__init__(*args, **kwargs)
 
     def set_artificial_write_ops_budget(self, hours, budget):
