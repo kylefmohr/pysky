@@ -22,17 +22,27 @@ class RateLimitExceeded(Exception):
     pass
 
 
+def get_budget_used(hours):
+
+    budget_sum_row = (
+        APICallLog.select(fn.sum(APICallLog.write_op_points_consumed))
+        .where(APICallLog.timestamp >= datetime.now(UTC) - timedelta(hours=hours))
+        .first()
+    )
+
+    try:
+        return budget_sum_row.sum
+    except AttributeError:
+        return 0
+
+
 def check_write_ops_budget(hours, points_to_use, override_budget=None):
 
     assert hours in [1,24]
     budget = override_budget or WRITE_OPS_BUDGETS[hours]
 
-    budget_used = (
-        APICallLog.select(fn.sum(APICallLog.write_op_points_consumed))
-        .where(APICallLog.timestamp >= datetime.now(UTC) - timedelta(hours=hours))
-        .first()
-        .sum
-    ) + points_to_use
+    budget_used = get_budget_used(hours)
+    budget_used += points_to_use
 
     if budget_used >= budget:
         raise RateLimitExceeded(
