@@ -7,6 +7,8 @@ from pysky.database import db
 if db.is_postgresql:
     from playhouse.postgres_ext import DateTimeTZField as DateTimeField
     from pysky.fields import PostgreSQLCharField as CharField
+else:
+    from peewee import CharField, DateTimeField
 
 
 class BaseModel(Model):
