@@ -44,10 +44,10 @@ class ExcessiveIteration(Exception):
 
 class BskyClient(object):
 
-    def __init__(self, ignore_cached_session=False, skip_call_logging=False):
+    def __init__(self, ignore_cached_session=False):
         self.auth_header = {}
         self.ignore_cached_session = ignore_cached_session
-        self.skip_call_logging = skip_call_logging
+        self.remote_call_count = 0
 
         try:
             self.bsky_auth_username = os.environ["BSKY_AUTH_USERNAME"]
@@ -214,6 +214,7 @@ class BskyClient(object):
 
         time_start = time()
         r = method(uri, **args)
+        self.remote_call_count += 1
         time_end = time()
         session_was_refreshed = False
 
@@ -221,6 +222,7 @@ class BskyClient(object):
             self.refresh_session()
             args["headers"].update(self.auth_header)
             r = method(uri, **args)
+            self.remote_call_count += 1
             session_was_refreshed = True
 
         return r, int((time_end - time_start) * 100000), session_was_refreshed
@@ -339,8 +341,7 @@ class BskyClient(object):
             response_object = SimpleNamespace()
             call_exception = e
 
-        if not self.skip_call_logging:
-            apilog.save()
+        apilog.save()
 
         err_prefix = None
         if apilog.exception_class:
@@ -348,7 +349,7 @@ class BskyClient(object):
         elif apilog.http_status_code >= 400:
             err_prefix = f"Bluesky API returned HTTP {apilog.http_status_code}"
 
-        if err_prefix and not self.skip_call_logging:
+        if err_prefix:
             log.error(err_prefix)
             log.error("For more details run the query:")
             log.error(f"SELECT * FROM api_call_log WHERE id={apilog.id};")
@@ -476,7 +477,6 @@ class BskyClientTestMode(BskyClient):
 
     def __init__(self, *args, **kwargs):
         kwargs["ignore_cached_session"] = True
-        kwargs["skip_call_logging"] = True
         self.override_budgets = {}
         self.database = BskySession._meta.database
         create_non_existing_tables(self.database)
