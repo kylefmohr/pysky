@@ -2,12 +2,16 @@ from datetime import datetime, timezone
 
 import pytest
 
-import pysky
+from tests.fixtures import bsky
 
+def test_rate_limit(bsky):
 
-def test_rate_limit():
+    import pysky
+    from pysky.ratelimit import get_budget_used
 
-    bsky = pysky.BskyClientTestMode()
+    assert get_budget_used(1) == 0
+    assert get_budget_used(24) == 0
+
     bsky.set_artificial_write_ops_budget(1, 1)
     bsky.set_artificial_write_ops_budget(24, 1)
 

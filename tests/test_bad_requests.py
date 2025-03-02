@@ -1,12 +1,11 @@
 import pytest
 
-import pysky
+from tests.fixtures import bsky
 
 
-def test_endpoint_404_failure():
+def test_endpoint_404_failure(bsky):
 
-    bsky = pysky.BskyClientTestMode()
-
+    import pysky
     with pytest.raises(pysky.APIError) as e:
         # missing xrpc/ prefix
         profile = bsky.get(endpoint="app.bsky.actor.getProfile")
@@ -14,10 +13,9 @@ def test_endpoint_404_failure():
     assert e.value.apilog.http_status_code == 404
 
 
-def test_endpoint_404_failure_2():
+def test_endpoint_404_failure_2(bsky):
 
-    bsky = pysky.BskyClientTestMode()
-
+    import pysky
     with pytest.raises(pysky.APIError) as e:
         # endpoint not available on public host
         prefs = bsky.get(endpoint="xrpc/app.bsky.actor.getPreferences")

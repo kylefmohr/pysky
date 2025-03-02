@@ -1,9 +1,6 @@
-import pysky
+from tests.fixtures import bsky
 
-
-def test_authenticated_success():
-
-    bsky = pysky.BskyClientTestMode()
+def test_authenticated_success(bsky):
 
     prefs = bsky.get(endpoint="xrpc/app.bsky.actor.getPreferences", hostname="bsky.social")
     prefs = prefs.preferences
