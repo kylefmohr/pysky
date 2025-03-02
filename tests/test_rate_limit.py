@@ -4,6 +4,7 @@ import pytest
 
 from tests.fixtures import bsky
 
+
 def test_rate_limit(bsky):
 
     import pysky

@@ -23,19 +23,22 @@ def test_db_state_1_tables_exist_and_are_empty(bsky):
 
 def test_db_state_2_insert(bsky):
     from pysky.models import BskyUserProfile
-    prof = BskyUserProfile(did='d', handle='h')
+
+    prof = BskyUserProfile(did="d", handle="h")
     prof.save()
     assert prof.id == 1
 
 
 def test_db_state_3_insert_worked(bsky):
     from pysky.models import BskyUserProfile
+
     cnt = BskyUserProfile.select().count()
     assert cnt == 1, f"row count is {cnt}, should be 1"
 
 
 def test_db_state_4_integrity_check(bsky):
     from pysky.models import BskyUserProfile
-    prof = BskyUserProfile(did='d', handle='h')
+
+    prof = BskyUserProfile(did="d", handle="h")
     with pytest.raises(peewee.IntegrityError):
         prof.save()

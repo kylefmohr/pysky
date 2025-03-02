@@ -15,9 +15,7 @@ def unset_env_vars(var_names):
 
 def run_without_env_vars(var_names):
     def decorator(func):
-        print(func.__name__)
         def wrapper(*args, **kwargs):
-            #print(session)
             with unset_env_vars(var_names):
                 return func(*args, **kwargs)
 
