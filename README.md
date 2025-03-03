@@ -54,11 +54,9 @@ The wrapper methods are not meant to be comprehensive, the user is expected to p
 
 In addition to `endpoint` a `hostname` argument must be provided when the default value of `public.api.bsky.app` is not appropriate. See: [API Hosts and Auth](https://docs.bsky.app/docs/advanced-guides/api-directory#bluesky-services).
 
-There are three database tables that can be queried manually or with the Peewee model classes in `pysky.models`.
-
 ## Passing Arguments
 
-Arguments to a GET or POST can be passed to `get()` or `post()` as either a `params` dict or as kwargs. Or both at once. These two requests are equivalent:
+Parameters to a GET or POST can be passed to `get()` or `post()` as either a `params` dict or as kwargs. Or both at once. These two requests are equivalent:
 
 ```python
 In [1]: r = bsky.get(hostname="bsky.social",
@@ -79,6 +77,8 @@ In [3]: r = bsky.get(hostname="bsky.social",
 In [4]: len(r.records)
 Out[4]: 17
 ```
+
+Note the distinction that repo, collection, and limit are parameters to be passed to the endpoint, whereas hostname and endpoint are used by the library to make the request.
 
 If an argument is passed in both places, the kwargs value takes precedence.
 
@@ -373,6 +373,11 @@ def list_records(
         **kwargs,
     )
 ```
+
+## User Profiles
+
+There's a `BskyClient.get_user_profile(actor)` method (takes handle or DID) that wraps `.get(endpoint="xrpc/app.bsky.actor.getProfile", ...)` and saves the user profile record to the `bsky_user_profile` table in the database. If the user handle or DID is in the table, it will be returned from there without accessing the API. This table/model is useful for relations to other tables/models in the application, if applicable. To bypass the cache and avoid potentially stale data, pass `force_remote_call=True`. The table will still be updated with any changed data.
+
 
 ## Rate Limit Monitoring for Write Operations
 
