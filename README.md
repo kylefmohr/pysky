@@ -302,11 +302,11 @@ def get_convo_logs(
 
 ### Typical Usage: 
 
-A value for the cursor argument should usually not be passed to this method. The typical use case is for the first call to this method to return all objects from the beginning, and subsequent calls only to return objects created since the previous call was made. For that behavior, call this method without passing a cursor value. The decorator code will override the default arg value as needed.
+A value for the cursor argument will usually not be passed to this method. The typical use case is for the first call to this method to return all objects from the beginning, and subsequent calls only to return objects created since the previous call was made. For that behavior, call this method without passing a cursor value. The decorator code will override the default arg value as needed.
 
-Before the API call is made, the most recent cursor received for this endpoint is queried from `api_call_log`. If one is found, it's automatically added to the parameters passed to the call. If one is not found, the value of the "[zero cursor](https://github.com/bluesky-social/atproto/issues/2760#issuecomment-2316325455)" is used.
+Before the API call is made, the most recent cursor received for this endpoint is queried from the `api_call_log` table. If one is found, it's automatically added to the parameters passed to the call. If one is not found, a default cursor representing the beginning of time is used. Note that the value of this default cursor is different for this endpoint than others, the library handles this. See: [zero cursor](https://github.com/bluesky-social/atproto/issues/2760#issuecomment-2316325455).
 
-If the API call gets a successful response, the new cursor value is saved to `api_call_log` as part of the normal course of database logging.
+If the API call gets a successful response, the new (returned) cursor value is saved to `api_call_log` as part of the normal course of database logging.
 
 The response attribute name for the list of objects returned, in this case "logs", is used by the decorator to collect the objects across multiple pages into one list, if necessary.
 
@@ -381,11 +381,13 @@ There's a `BskyClient.get_user_profile(actor)` method (takes handle or DID) that
 
 ## Rate Limit Monitoring for Write Operations
 
-Before each API call that would trigger a write and incur a cost against the hourly/daily rate write ops limit budget, the cost of prior calls is checked in the database to ensure that the limit will not be exceeded. If it would be, a `pysky.RateLimitExceeded` exception is raised. A warning is logged to the "pysky" logger if more than 95% of the hourly or daily budget has been used.
+Before each API call that would trigger a write and incur a cost against the hourly/daily rate write ops limit, the cost of prior calls is checked in the database to ensure that the limit would not be exceeded. If it would be, a `pysky.RateLimitExceeded` exception is raised. A warning is logged to the "pysky" logger if more than 95% of the hourly or daily budget has been used. Example:
+
+`2025-02-28 12:08:44 - WARNING - Over 95% of the 24-hour write ops budget has been used: 33356/35000 (95.30%)`
 
 See: https://docs.bsky.app/docs/advanced-guides/rate-limits
 
-The overall 3000 request per 5 minutes rate limit applied to all calls is not monitored by this library, but the headers returned in the `response.http.headers` dict indicate the current metrics.
+The overall 3000 request per 5 minutes rate limit applied to all calls is not monitored by this library, but the headers returned in the `response.http.headers` dict show the current metrics.
 
 ```
 RateLimit-Limit: 3000
