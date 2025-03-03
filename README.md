@@ -262,7 +262,7 @@ session_was_refreshed    | f
 duration_microseconds    | 16637
 ```
 
-Note that this library only appends to this table, so the responsibility is on the user to prune or archive the table as needed to keep it from growing too large. However, see the next section about cursor management. Rows with cursor data should be retained if that feature is important.
+The library only appends to this table, so the responsibility is on the user to prune or archive the table as needed to keep it from growing too large. However, see the next section about cursor management. Rows with cursor data should be retained if that feature is used.
 
 Here's how to truncate old rows from the table with Peewee:
 
@@ -270,13 +270,13 @@ Here's how to truncate old rows from the table with Peewee:
 from datetime import datetime, timedelta, UTC
 
 d = APICallLog.delete() \
-    .where(APICallLog.timestamp < datetime.now(UTC) - timedelta(days=30))
+    .where(APICallLog.timestamp < datetime.now(UTC) - timedelta(days=90))
 d.execute()
 
 # preserve rows with cursor values
 d = APICallLog.delete() \
     .where(APICallLog.cursor_received.is_null()) \
-    .where(APICallLog.timestamp < datetime.now(UTC) - timedelta(days=30))
+    .where(APICallLog.timestamp < datetime.now(UTC) - timedelta(days=90))
 d.execute()
 ```
 
@@ -296,7 +296,6 @@ def get_convo_logs(
     paginate=True,
     **kwargs,
 ):
-    # cursor usage notes: https://github.com/bluesky-social/atproto/issues/2760 (specific to this endpoint)
     return self.get(hostname="api.bsky.chat",
                     endpoint=endpoint,
                     params={"cursor": cursor},
@@ -307,7 +306,7 @@ def get_convo_logs(
 
 A value for the cursor argument will usually not be passed to this method. The typical use case is for the first call to this method to return all objects from the beginning, and subsequent calls only to return objects created since the previous call was made. For that behavior, call this method without passing a cursor value. The decorator code will override the default arg value as needed.
 
-Before the API call is made, the most recent cursor received for this endpoint is queried from the `api_call_log` table. If one is found, it's automatically added to the parameters passed to the call. If one is not found, a default cursor representing the beginning of time is used. Note that the value of this default cursor is different for this endpoint than others, the library handles this. See: [zero cursor](https://github.com/bluesky-social/atproto/issues/2760#issuecomment-2316325455).
+Before the API call is made, the most recent cursor received for this endpoint is queried from the `api_call_log` table. If one is found, it's automatically added to the parameters passed to the call. If one is not found, a default cursor representing the beginning of time is used. Note that the value of this default cursor is different for this endpoint than others, the library handles this. See: [zero cursor](https://github.com/bluesky-social/atproto/issues/2760#issuecomment-2316325455). For other endpoints, the default cursor value should be None.
 
 If the API call gets a successful response, the new (returned) cursor value is saved to `api_call_log` as part of the normal course of database logging.
 
