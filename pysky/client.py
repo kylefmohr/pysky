@@ -58,103 +58,6 @@ class BskyClient(object):
             self.bsky_auth_username = ""
             self.bsky_auth_password = ""
 
-    def process_cursor(func, **kwargs):
-        """Decorator for any api call that returns a cursor, this looks up the previous
-        cursor from the database, applies it to the call, and saves the newly returned
-        cursor to the database."""
-
-        inspection = inspect.signature(func)
-        _endpoint = inspection.parameters["endpoint"].default
-        _collection_attr = inspection.parameters["collection_attr"].default
-        _paginate = inspection.parameters["paginate"].default
-
-        cursor_key_func_param = inspection.parameters.get("cursor_key_func")
-        if cursor_key_func_param:
-            _cursor_key_func = cursor_key_func_param.default
-        else:
-            _cursor_key_func = lambda kwargs: None
-
-        def cursor_mgmt(self, **kwargs):
-            endpoint = kwargs.get("endpoint", _endpoint)
-            collection_attr = kwargs.get("collection_attr", _collection_attr)
-            paginate = kwargs.get("paginate", _paginate)
-
-            # only provide the database-backed cursor if one was not passed manually
-            if not "cursor" in kwargs:
-
-                where_expressions = [
-                    APICallLog.endpoint == endpoint,
-                    APICallLog.cursor_received.is_null(False),
-                ]
-
-                cursor_key = _cursor_key_func(kwargs)
-
-                if cursor_key:
-                    kwargs["cursor_key"] = cursor_key
-                    where_expressions += [APICallLog.cursor_key == cursor_key]
-
-                previous_db_cursor = (
-                    APICallLog.select()
-                    .where(*where_expressions)
-                    .order_by(APICallLog.timestamp.desc())
-                    .first()
-                )
-
-                initial_cursor = INITIAL_CURSOR.get(endpoint)
-                kwargs["cursor"] = (
-                    previous_db_cursor.cursor_received if previous_db_cursor else initial_cursor
-                )
-
-            if paginate:
-                responses = self.call_with_pagination(func, **kwargs)
-                response = self.combine_paginated_responses(responses, collection_attr)
-            else:
-                response = func(self, **kwargs)
-
-            return response
-
-        return cursor_mgmt
-
-    def combine_paginated_responses(self, responses, collection_attr="logs"):
-
-        for page_response in responses[1:]:
-            combined_collection = getattr(responses[0], collection_attr) + getattr(
-                page_response, collection_attr
-            )
-            setattr(responses[0], collection_attr, combined_collection)
-
-        return responses[0]
-
-    def call_with_pagination(self, func, **kwargs):
-
-        assert "cursor" in kwargs, "called call_with_pagination without a cursor argument"
-        responses = []
-        iteration_count = 0
-        ITERATION_MAX = 1000
-
-        while True:
-
-            iteration_count += 1
-            if iteration_count > ITERATION_MAX:
-                raise ExcessiveIteration(
-                    f"tried to paginate through too many pages ({ITERATION_MAX})"
-                )
-
-            response = func(self, **kwargs)
-            responses.append(response)
-
-            try:
-                new_cursor = getattr(response, "cursor", kwargs["cursor"])
-                if new_cursor == kwargs["cursor"]:
-                    break
-
-                kwargs["cursor"] = new_cursor
-
-            except AttributeError:
-                raise
-
-        return responses
-
     def load_or_create_session(self):
 
         session = None
@@ -195,6 +98,13 @@ class BskyClient(object):
         self.created_at = datetime.now().isoformat()
         self.serialize()
         return self.set_auth_header()
+
+    def get_did(self):
+        try:
+            return self.did
+        except AttributeError:
+            self.load_or_create_session()
+            return self.did
 
     def set_auth_header(self):
         self.auth_header = {"Authorization": f"Bearer {self.accessJwt}"}
@@ -238,11 +148,21 @@ class BskyClient(object):
         if BskyClient.is_expired_token_response(r):
             self.refresh_session()
             args["headers"].update(self.auth_header)
+            time_start = time()
             r = method(uri, **args)
+            time_end = time()
             self.remote_call_count += 1
             session_was_refreshed = True
 
         return r, int((time_end - time_start) * 1000000), session_was_refreshed
+
+    def post(self, **kwargs):
+        kwargs["method"] = requests.post
+        return self.call(**kwargs)
+
+    def get(self, **kwargs):
+        kwargs["method"] = requests.get
+        return self.call(**kwargs)
 
     def call(
         self,
@@ -257,7 +177,6 @@ class BskyClient(object):
         cursor_key=None,
         **kwargs,
     ):
-
         uri = f"https://{hostname}/{endpoint}"
 
         write_op_points_cost = WRITE_OP_POINTS_MAP.get(endpoint, 0)
@@ -400,14 +319,6 @@ class BskyClient(object):
 
         return response_object
 
-    def post(self, **kwargs):
-        kwargs["method"] = requests.post
-        return self.call(**kwargs)
-
-    def get(self, **kwargs):
-        kwargs["method"] = requests.get
-        return self.call(**kwargs)
-
     @staticmethod
     def is_expired_token_response(r):
         return r.status_code == 400 and r.json()["error"] == "ExpiredToken"
@@ -419,13 +330,6 @@ class BskyClient(object):
             headers={"Content-Type": mimetype},
             hostname=hostname,
         )
-
-    def get_did(self):
-        try:
-            return self.did
-        except AttributeError:
-            self.load_or_create_session()
-            return self.did
 
     def create_record(self, collection, post):
         params = {
@@ -452,6 +356,103 @@ class BskyClient(object):
 
     def delete_post(self, post_id):
         return self.delete_record("app.bsky.feed.post", post_id)
+
+    def process_cursor(func, **kwargs):
+        """Decorator for any api call that returns a cursor, this looks up the previous
+        cursor from the database, applies it to the call, and saves the newly returned
+        cursor to the database."""
+
+        inspection = inspect.signature(func)
+        _endpoint = inspection.parameters["endpoint"].default
+        _collection_attr = inspection.parameters["collection_attr"].default
+        _paginate = inspection.parameters["paginate"].default
+
+        cursor_key_func_param = inspection.parameters.get("cursor_key_func")
+        if cursor_key_func_param:
+            _cursor_key_func = cursor_key_func_param.default
+        else:
+            _cursor_key_func = lambda kwargs: None
+
+        def cursor_mgmt(self, **kwargs):
+            endpoint = kwargs.get("endpoint", _endpoint)
+            collection_attr = kwargs.get("collection_attr", _collection_attr)
+            paginate = kwargs.get("paginate", _paginate)
+
+            # only provide the database-backed cursor if one was not passed manually
+            if not "cursor" in kwargs:
+
+                where_expressions = [
+                    APICallLog.endpoint == endpoint,
+                    APICallLog.cursor_received.is_null(False),
+                ]
+
+                cursor_key = _cursor_key_func(kwargs)
+
+                if cursor_key:
+                    kwargs["cursor_key"] = cursor_key
+                    where_expressions += [APICallLog.cursor_key == cursor_key]
+
+                previous_db_cursor = (
+                    APICallLog.select()
+                    .where(*where_expressions)
+                    .order_by(APICallLog.timestamp.desc())
+                    .first()
+                )
+
+                initial_cursor = INITIAL_CURSOR.get(endpoint)
+                kwargs["cursor"] = (
+                    previous_db_cursor.cursor_received if previous_db_cursor else initial_cursor
+                )
+
+            if paginate:
+                responses = self.call_with_pagination(func, **kwargs)
+                response = self.combine_paginated_responses(responses, collection_attr)
+            else:
+                response = func(self, **kwargs)
+
+            return response
+
+        return cursor_mgmt
+
+    def combine_paginated_responses(self, responses, collection_attr="logs"):
+
+        for page_response in responses[1:]:
+            combined_collection = getattr(responses[0], collection_attr) + getattr(
+                page_response, collection_attr
+            )
+            setattr(responses[0], collection_attr, combined_collection)
+
+        return responses[0]
+
+    def call_with_pagination(self, func, **kwargs):
+
+        assert "cursor" in kwargs, "called call_with_pagination without a cursor argument"
+        responses = []
+        iteration_count = 0
+        ITERATION_MAX = 1000
+
+        while True:
+
+            iteration_count += 1
+            if iteration_count > ITERATION_MAX:
+                raise ExcessiveIteration(
+                    f"tried to paginate through too many pages ({ITERATION_MAX})"
+                )
+
+            response = func(self, **kwargs)
+            responses.append(response)
+
+            try:
+                new_cursor = getattr(response, "cursor", kwargs["cursor"])
+                if new_cursor == kwargs["cursor"]:
+                    break
+
+                kwargs["cursor"] = new_cursor
+
+            except AttributeError:
+                raise
+
+        return responses
 
     @process_cursor
     def list_records(
