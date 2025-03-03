@@ -297,7 +297,10 @@ def get_convo_logs(
     **kwargs,
 ):
     # cursor usage notes: https://github.com/bluesky-social/atproto/issues/2760 (specific to this endpoint)
-    return self.get(hostname="api.bsky.chat", endpoint=endpoint, params={"cursor": cursor}, **kwargs)
+    return self.get(hostname="api.bsky.chat",
+                    endpoint=endpoint,
+                    params={"cursor": cursor},
+                    **kwargs)
 ```
 
 ### Typical Usage: 
@@ -376,7 +379,7 @@ def list_records(
 
 ## User Profiles
 
-There's a `BskyClient.get_user_profile(actor)` method (takes handle or DID) that wraps `.get(endpoint="xrpc/app.bsky.actor.getProfile", ...)` and saves the user profile record to the `bsky_user_profile` table in the database. If the user handle or DID is in the table, it will be returned from there without accessing the API. This table/model is useful for relations to other tables/models in the application, if applicable. To bypass the cache and avoid potentially stale data, pass `force_remote_call=True`. The table will still be updated with any changed data.
+There's a `BskyClient.get_user_profile(actor)` method (takes handle or DID, per the [API doc](https://docs.bsky.app/docs/api/app-bsky-actor-get-profile)) that wraps `.get(endpoint="xrpc/app.bsky.actor.getProfile", ...)` and saves the user profile record to the `bsky_user_profile` table in the database. If the user handle or DID is in the table, it will be returned from there without accessing the API. This table/model is useful for relations to other tables/models in the application, if applicable. To bypass the cache and avoid potentially stale data, pass `force_remote_call=True`. The table will still be updated with any changed data.
 
 
 ## Rate Limit Monitoring for Write Operations
@@ -387,7 +390,7 @@ Before each API call that would trigger a write and incur a cost against the hou
 
 See: https://docs.bsky.app/docs/advanced-guides/rate-limits
 
-The overall 3000 request per 5 minutes rate limit applied to all calls is not monitored by this library, but the headers returned in the `response.http.headers` dict show the current metrics.
+The overall 3000 requests per 5 minutes rate limit applied to all calls is not monitored by this library, but the headers returned in the `response.http.headers` dict show the current metrics.
 
 ```
 RateLimit-Limit: 3000
