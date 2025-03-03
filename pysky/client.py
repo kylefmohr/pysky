@@ -242,7 +242,7 @@ class BskyClient(object):
             self.remote_call_count += 1
             session_was_refreshed = True
 
-        return r, int((time_end - time_start) * 100000), session_was_refreshed
+        return r, int((time_end - time_start) * 1000000), session_was_refreshed
 
     def call(
         self,
