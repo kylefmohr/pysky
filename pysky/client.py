@@ -66,6 +66,12 @@ class BskyClient(object):
         _collection_attr = inspection.parameters["collection_attr"].default
         _paginate = inspection.parameters["paginate"].default
 
+        cursor_key_func_param = inspection.parameters.get("cursor_key_func")
+        if cursor_key_func_param:
+            _cursor_key_func = cursor_key_func_param.default
+        else:
+            _cursor_key_func = lambda kwargs: None
+
         def cursor_mgmt(self, **kwargs):
             endpoint = kwargs.get("endpoint", _endpoint)
             collection_attr = kwargs.get("collection_attr", _collection_attr)
@@ -73,28 +79,32 @@ class BskyClient(object):
 
             # only provide the database-backed cursor if one was not passed manually
             if not "cursor" in kwargs:
+
+                where_expressions = [APICallLog.endpoint == endpoint, APICallLog.cursor_received.is_null(False)]
+
+                cursor_key = _cursor_key_func(kwargs)
+
+                if cursor_key:
+                    kwargs["cursor_key"] = cursor_key
+                    where_expressions += [APICallLog.cursor_key == cursor_key]
+
                 previous_db_cursor = (
                     APICallLog.select()
-                    .where(
-                        APICallLog.endpoint == endpoint, APICallLog.cursor_received.is_null(False)
-                    )
+                    .where(*where_expressions)
                     .order_by(APICallLog.timestamp.desc())
                     .first()
                 )
+
                 initial_cursor = INITIAL_CURSOR.get(endpoint)
                 kwargs["cursor"] = (
                     previous_db_cursor.cursor_received if previous_db_cursor else initial_cursor
                 )
 
             if paginate:
-                responses, final_cursor = self.call_with_pagination(func, **kwargs)
+                responses = self.call_with_pagination(func, **kwargs)
                 response = self.combine_paginated_responses(responses, collection_attr)
             else:
                 response = func(self, **kwargs)
-                # with some endpoints the cursor is returned with the response
-                # at eof, and with others the cursor attribute is not present
-                # in the response
-                final_cursor = getattr(response, "cursor", kwargs["cursor"])
 
             return response
 
@@ -138,7 +148,7 @@ class BskyClient(object):
             except AttributeError:
                 raise
 
-        return responses, kwargs["cursor"]
+        return responses
 
     def load_or_create_session(self):
 
@@ -237,6 +247,7 @@ class BskyClient(object):
         use_refresh_token=False,
         data=None,
         headers=None,
+        cursor_key=None,
     ):
 
         uri = f"https://{hostname}/{endpoint}"
@@ -286,6 +297,7 @@ class BskyClient(object):
             # add auth header if appropriate
             if auth_method == AUTH_METHOD_TOKEN:
                 args["headers"].update(self.auth_header)
+                apilog.request_did = self.did
 
         params = params or {}
 
@@ -328,7 +340,11 @@ class BskyClient(object):
                 apilog.exception_text = getattr(response_object, "message", None)
 
             apilog.response_keys = ",".join(sorted(response_object.__dict__.keys()))
-            apilog.cursor_received = getattr(response_object, "cursor", None)
+
+            if 'cursor_mgmt' in [f.function for f in inspect.stack()]:
+                apilog.cursor_received = getattr(response_object, "cursor", None)
+                apilog.cursor_key = cursor_key
+
             call_exception = None
         except Exception as e:
 
@@ -427,18 +443,31 @@ class BskyClient(object):
         return self.delete_record("app.bsky.feed.post", post_id)
 
     @process_cursor
-    def get_blocks(
+    def list_records(
         self,
         endpoint="xrpc/com.atproto.repo.listRecords",
         cursor=None,
         collection_attr="records",
         paginate=True,
+        collection=None,
+        cursor_key_func=lambda kwargs: kwargs['collection'],
+        **kwargs,
     ):
+        assert collection, "collection argument must be given to list_records()"
         return self.get(
             hostname=HOSTNAME_ENTRYWAY,
             endpoint=endpoint,
-            params={"cursor": cursor, "repo": self.get_did(), "collection": "app.bsky.graph.block"}
+            params={"cursor": cursor, "repo": self.get_did(), "collection": collection},
+            **kwargs
         )
+
+    def list_follows(self, **kwargs):
+        kwargs["collection"] = "app.bsky.graph.follow"
+        return self.list_records(**kwargs)
+
+    def list_blocks(self, **kwargs):
+        kwargs["collection"] = "app.bsky.graph.block"
+        return self.list_records(**kwargs)
 
     @process_cursor
     def get_convo_logs(
