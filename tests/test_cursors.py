@@ -10,10 +10,10 @@ def test_cursor(bsky):
     cursor_count = APICallLog.select().where(APICallLog.endpoint == endpoint).count()
     assert cursor_count == 0
 
-    follows = bsky.list_follows()
-    blocks = bsky.list_blocks()
-    assert len(follows.records) > 0
-    assert len(blocks.records) > 0
+    follows = bsky.list_follows(limit=1, paginate=False)
+    blocks = bsky.list_blocks(limit=1, paginate=False)
+    assert len(follows.records) == 1
+    assert len(blocks.records) == 1
 
     cursor_1 = (
         APICallLog.select()
@@ -41,6 +41,13 @@ def test_cursor(bsky):
     assert cursor_2
     assert cursor_1 != cursor_2
 
+    # finish retrieving the lists, with pagination this time
+    follows = bsky.list_follows()
+    blocks = bsky.list_blocks()
+    assert len(follows.records) > 0
+    assert len(blocks.records) > 0
+
+    # there should be no more objects now because of the saved eof cursor
     follows = bsky.list_follows()
     blocks = bsky.list_blocks()
     assert len(follows.records) == 0
