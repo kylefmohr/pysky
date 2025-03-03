@@ -255,6 +255,7 @@ class BskyClient(object):
         data=None,
         headers=None,
         cursor_key=None,
+        **kwargs,
     ):
 
         uri = f"https://{hostname}/{endpoint}"
@@ -307,6 +308,8 @@ class BskyClient(object):
                 apilog.request_did = self.did
 
         params = params or {}
+        # additional **kwargs passed through to here will get added to params, for convenience
+        params.update(kwargs)
 
         if auth_method == AUTH_METHOD_TOKEN and use_refresh_token:
             args["headers"].update({"Authorization": f"Bearer {self.refreshJwt}"})
@@ -483,9 +486,10 @@ class BskyClient(object):
         cursor=ZERO_CURSOR,
         collection_attr="logs",
         paginate=True,
+        **kwargs,
     ):
         # cursor usage notes: https://github.com/bluesky-social/atproto/issues/2760 (specific to this endpoint)
-        return self.get(hostname=HOSTNAME_CHAT, endpoint=endpoint, params={"cursor": cursor})
+        return self.get(hostname=HOSTNAME_CHAT, endpoint=endpoint, params={"cursor": cursor}, **kwargs)
 
     def get_user_profile(self, actor, force_remote_call=False):
         """Either a user handle or DID can be passed to this method. Handle
