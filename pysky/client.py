@@ -337,6 +337,7 @@ class BskyClient(object):
             )
             try:
                 response_object = json.loads(r.text, object_hook=lambda d: SimpleNamespace(**d))
+                response_object.http = SimpleNamespace(headers = r.headers, status_code=r.status_code, elapsed=r.elapsed, url=r.url)
             except json.JSONDecodeError:
                 response_object = SimpleNamespace()
 
