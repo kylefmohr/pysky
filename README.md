@@ -371,7 +371,6 @@ def list_records(
     cursor_key_func=lambda kwargs: kwargs["collection"],
     **kwargs,
 ):
-    assert collection, "collection argument must be given to list_records()"
     return self.get(
         hostname="bsky.social",
         endpoint=endpoint,
@@ -380,13 +379,21 @@ def list_records(
     )
 ```
 
-## Rate Limit Monitoring
+## Rate Limit Monitoring for Write Operations
 
-Before each API call that would trigger a write and incur a cost against the hourly/daily rate limit budget, the cost of prior calls is checked in the database to ensure that the limit will not be exceeded. If it would be, a `pysky.RateLimitExceeded` exception is raised. A warning is logged to the "pysky" logger if more than 95% of the hourly or daily budget has been used.
+Before each API call that would trigger a write and incur a cost against the hourly/daily rate write ops limit budget, the cost of prior calls is checked in the database to ensure that the limit will not be exceeded. If it would be, a `pysky.RateLimitExceeded` exception is raised. A warning is logged to the "pysky" logger if more than 95% of the hourly or daily budget has been used.
 
 See: https://docs.bsky.app/docs/advanced-guides/rate-limits
 
+The overall 3000 request per 5 minutes rate limit applied to all calls is not monitored by this library, but the headers returned in the `response.http.headers` dict indicate the current metrics.
+
+```
+RateLimit-Limit: 3000
+RateLimit-Remaining: 2999
+RateLimit-Reset: 1741030149
+RateLimit-Policy: 3000;w=300
+```
 
 ## Tests
 
-Note that these test will talk to the live API and are in part designed around the state of my own Bluesky account. They're really only meant to be useful to me. But check them out if you'd like. Only `test_non_authenticated_failure` and `test_rate_limit` would (potentially) do any writing to the account, and only in the case of failure. The tests only use an ephemeral in-memory database and won't touch the configured database.
+Note that the tests will talk to the live API and are partly designed around the state of my own Bluesky account. They're really only meant to be useful to me. But check them out if you'd like and modify as needed. Only `test_non_authenticated_failure` and `test_rate_limit` would (potentially) do any writing to the account, and only in the case of failure. The tests only use an ephemeral in-memory database and won't touch the environment-configured database.
