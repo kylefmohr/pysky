@@ -12,7 +12,7 @@ def test_db_type(bsky):
     assert bsky.database.database == ":memory:"
 
 
-def test_db_state_1_tables_exist_and_are_empty(bsky):
+def test_db_state_1_tables_exist_and_are_empty():
 
     from pysky.models import BskyUserProfile, APICallLog, BskySession
 
@@ -21,7 +21,7 @@ def test_db_state_1_tables_exist_and_are_empty(bsky):
         assert cnt == 0, f"row count is {cnt}, should be 0"
 
 
-def test_db_state_2_insert(bsky):
+def test_db_state_2_insert():
     from pysky.models import BskyUserProfile
 
     prof = BskyUserProfile(did="d", handle="h")
@@ -29,14 +29,14 @@ def test_db_state_2_insert(bsky):
     assert prof.id == 1
 
 
-def test_db_state_3_insert_visible_across_tests(bsky):
+def test_db_state_3_insert_visible_across_tests():
     from pysky.models import BskyUserProfile
 
     cnt = BskyUserProfile.select().count()
     assert cnt == 1, f"row count is {cnt}, should be 1"
 
 
-def test_db_state_4_integrity_check(bsky):
+def test_db_state_4_integrity_check():
     from pysky.models import BskyUserProfile
 
     prof = BskyUserProfile(did="d", handle="h")
