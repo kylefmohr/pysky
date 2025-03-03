@@ -41,6 +41,8 @@ class APICallLog(BaseModel):
     timestamp = DateTimeField(default=datetime.now, index=True)
     hostname = CharField()
     endpoint = CharField(index=True)
+    request_did = CharField(null=True)
+    cursor_key = CharField(null=True)
     cursor_passed = CharField(null=True)
     cursor_received = CharField(null=True)
     method = CharField(null=True)
