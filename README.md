@@ -1,5 +1,5 @@
 # pysky
-A small Bluesky API library backed by a database to enable some quality of life features:
+A Bluesky API library backed by a database to enable some quality of life application-level features:
 
 * Automatic session caching/refreshing
 * Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are returned and that each object is only returned once
@@ -41,27 +41,53 @@ In [7]: # this won't require a call to the API because the record has been saved
    ...: profile = bsky.get_user_profile(profile.handle)
 ```
 
-`get_user_profile()` is an example of a wrapper for `get()` that caches the response data, though that approach may not always be helpful or necessary. It may also cause a problem, depending on the use case, if the data that gets cached locally changes remotely. `get_user_profile()` takes an optional `force_remote_call` boolean argument to work around this.
+`get_user_profile()` is an example of a wrapper for `get()` that caches the response data in the database, though that approach may not always be helpful or necessary. It may also cause a problem, depending on the use case, if the data that gets cached locally changes remotely. `get_user_profile()` takes an optional `force_remote_call` boolean argument to work around this.
 
 Most interaction with this library happens through just a few different methods:
 
 * Creating a `BskyClient` object
 * Calling `BskyClient.get()` and `BskyClient.post()`
-* There are a few other convenience methods wrapping `get()` and `post()`:
+* There are some other convenience methods wrapping `get()` and `post()`:
     * `BskyClient.upload_blob()`
     * `BskyClient.create_record()`
     * `BskyClient.create_post()`
     * `BskyClient.delete_record()`
     * `BskyClient.delete_post()`
-    * `BskyClient.get_convo_logs()`
-    * `BskyClient.get_user_profile()`
+    * `BskyClient.list_records()`
 
-This is not meant to be comprehensive, the user is expected to primarily call get/post or provide further wrappers around them. This library is intended to stay small and simple. Refer to the [official API reference](https://docs.bsky.app/docs/category/http-reference) for endpoints and parameters to provide. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
+The wrapper methods are not meant to be comprehensive, the user is expected to primarily call get/post or provide further wrappers around them. This library is intended to stay simple and focus on higher level features. Refer to the [official API reference](https://docs.bsky.app/docs/category/http-reference) for endpoints and parameters to provide. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
 
-In addition to `endpoint` a `hostname` argument must be provided when the default value of `public.api.bsky.app` is not appropriate.
+In addition to `endpoint` a `hostname` argument must be provided when the default value of `public.api.bsky.app` is not appropriate. See: [API Hosts and Auth](https://docs.bsky.app/docs/advanced-guides/api-directory#bluesky-services).
 
 There are three database tables that can be queried manually or with the Peewee model classes in `pysky.models`.
 
+## Passing Arguments
+
+Arguments to a GET or POST can be passed to `get()` or `post()` as either a `params` dict or as kwargs. Or both at once. These two requests are equivalent:
+
+```python
+In [1]: r = bsky.get(hostname="bsky.social",
+                     endpoint="xrpc/com.atproto.repo.listRecords",
+                     repo="did:plc:zcmchxw2gxlbincrchpdjopq",
+                     collection="app.bsky.feed.post",
+                     limit=17)
+
+In [2]: len(r.records)
+Out[2]: 17
+
+In [3]: r = bsky.get(hostname="bsky.social",
+                     endpoint="xrpc/com.atproto.repo.listRecords",
+                     params={"repo": "did:plc:zcmchxw2gxlbincrchpdjopq",
+                             "collection": "app.bsky.feed.post",
+                             "limit": 17})
+
+In [4]: len(r.records)
+Out[4]: 17
+```
+
+If an argument is passed in both places, the kwargs value takes precedence.
+
+The library will handle passing these values as a query string to a GET request and as a json body to a POST request.
 
 ## POST Examples:
 
@@ -85,20 +111,21 @@ response = bsky.post(hostname="bsky.social",
                      params=params)
 ```
 
-The library handles passing the values provided in `params` as a query string for GET requests and as a json body for POST requests. Binary data (e.g. image uploads) should be passed as the `data` argument to `BskyClient.post()`.
+Binary data (e.g. image uploads) should be passed as the `data` argument to `BskyClient.post()`.
 
 ```python
+blob_data = open("file.png", "rb").read()
+
 response = bsky.post(data=blob_data,
                      endpoint="xrpc/com.atproto.repo.uploadBlob",
-                     headers={"Content-Type": mimetype},
+                     headers={"Content-Type": "image/png"},
                      hostname="bsky.social")
 ```
 
-There's also an `upload_blob()` wrapper method for this:
+There's an `upload_blob()` wrapper method for this:
 
 ```python
-image_bytes = open("file.png", "rb").read()
-response = bsky.upload_blob(blob_data=image_bytes, mimetype="image/png")
+response = bsky.upload_blob(blob_data=blob_data, mimetype="image/png")
 ```
 
 To create a post with two images attached:
@@ -162,6 +189,30 @@ Note that a `$link` attribute can't be accessed with dot notation due to the dol
 The response from `bsky.get()` and `bsky.post()` is the JSON response from Bluesky converted to a [SimpleNamespace](https://docs.python.org/3/library/types.html#types.SimpleNamespace) object. This is for the convenience of accessing attributes with dot notation rather than dict lookups.
 
 The response is otherwise unmodified, so refer to the [API docs](https://docs.bsky.app/docs/category/http-reference) for the response schema of a given call.
+
+An `http` attribute is added to the response with these fields from the http response object: headers, status_code, elapsed, url
+
+```python
+
+In [1]: r = bsky.get(...)
+
+In [2]: for k,v in r.http.headers.items():
+   ...:     print(f"{k}: {v}")
+   ...:
+Date: Mon, 03 Mar 2025 19:24:09 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 972
+Connection: keep-alive
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+RateLimit-Limit: 3000
+RateLimit-Remaining: 2999
+RateLimit-Reset: 1741030149
+RateLimit-Policy: 3000;w=300
+atproto-repo-rev: 3ljiobrli672t
+atproto-content-labelers: did:plc:ar7c4by46qjdydhdevvrndac;redact
+Vary: Accept-Encoding
+```
 
 
 ## Session Management
@@ -248,8 +299,10 @@ def get_convo_logs(
     cursor=ZERO_CURSOR,
     collection_attr="logs",
     paginate=True,
+    **kwargs,
 ):
-    return self.get(hostname="api.bsky.chat", endpoint=endpoint, params={"cursor": cursor})
+    # cursor usage notes: https://github.com/bluesky-social/atproto/issues/2760 (specific to this endpoint)
+    return self.get(hostname="api.bsky.chat", endpoint=endpoint, params={"cursor": cursor}, **kwargs)
 ```
 
 ### Typical Usage: 
@@ -302,9 +355,38 @@ The fourth call passes the zero cursor manually which gets all data going back t
 
 Another way to retrieve data that's earlier than the latest saved cursor is to update/delete the row(s) in the `api_call_log` table for this endpoint to remove cursor history.
 
+### Cursor Lookup Logic
+
+In the above example, when the cursor is looked up in the database, it filters on the endpoint and request_did fields of the `api_call_log` table. Sometimes this is not enough, as different types of data can be returned from the same endpoint. Such as `com.atproto.repo.listRecords` returning both blocks and follows, each of which should have its own cursor. To ensure that the right cursor is looked up in this scenario, the method that's decorated by `@process_cursor` should have a `cursor_key_func` default argument that takes the kwargs and returns a string that, together with request_did and endpoint, uniquely identifies the scope to which the cursor should apply. For example:
+
+```
+@process_cursor
+def list_records(
+    self,
+    endpoint="xrpc/com.atproto.repo.listRecords"
+    cursor=None,
+    collection_attr="records",
+    paginate=True,
+    collection=None,
+    cursor_key_func=lambda kwargs: kwargs["collection"],
+    **kwargs,
+):
+    assert collection, "collection argument must be given to list_records()"
+    return self.get(
+        hostname="bsky.social",
+        endpoint=endpoint,
+        params={"cursor": cursor, "repo": self.get_did(), "collection": collection},
+        **kwargs,
+    )
+```
 
 ## Rate Limit Monitoring
 
 Before each API call that would trigger a write and incur a cost against the hourly/daily rate limit budget, the cost of prior calls is checked in the database to ensure that the limit will not be exceeded. If it would be, a `pysky.RateLimitExceeded` exception is raised. A warning is logged to the "pysky" logger if more than 95% of the hourly or daily budget has been used.
 
 See: https://docs.bsky.app/docs/advanced-guides/rate-limits
+
+
+## Tests
+
+Note that these test will talk to the live API and are in part designed around the state of my own Bluesky account. They're really only meant to be useful to me. But check them out if you'd like. Only `test_non_authenticated_failure` and `test_rate_limit` would (potentially) do any writing to the account, and only in the case of failure. The tests only use an ephemeral in-memory database and won't touch the configured database.
