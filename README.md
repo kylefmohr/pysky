@@ -42,7 +42,7 @@ Most interaction with this library happens through just a few different methods:
 
 * Creating a `BskyClient` object
 * Calling `BskyClient.get()` and `BskyClient.post()`
-* There are some other convenience methods wrapping `get()` and `post()`:
+* See `pysky/client.py` for examples of convenience methods wrapping `get()` and `post()`:
     * `BskyClient.upload_blob()`
     * `BskyClient.create_record()`
     * `BskyClient.create_post()`
@@ -50,7 +50,7 @@ Most interaction with this library happens through just a few different methods:
     * `BskyClient.delete_post()`
     * `BskyClient.list_records()`
 
-The wrapper methods are not meant to be comprehensive, the user is expected to primarily call get/post or provide further wrappers around them. This library is intended to stay simple and focus on higher level features. Refer to the [official API reference](https://docs.bsky.app/docs/category/http-reference) for endpoints and parameters to provide. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
+These wrapper methods are not meant to be comprehensive, the user is expected to primarily call get/post or provide further wrappers around them. This library is intended to stay simple and focus on higher level features. Refer to the [official API reference](https://docs.bsky.app/docs/category/http-reference) for endpoints and parameters to provide. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
 
 In addition to `endpoint` a `hostname` argument must be provided when the default value of `public.api.bsky.app` is not appropriate. See: [API Hosts and Auth](https://docs.bsky.app/docs/advanced-guides/api-directory#bluesky-services).
 
