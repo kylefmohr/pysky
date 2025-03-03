@@ -34,17 +34,9 @@ In [3]: profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
 In [4]: profile.handle
 Out[4]: 'craigweekend.bsky.social'
 
-In [5]: # wrapper method for bsky.get(endpoint="xrpc/app.bsky.actor.getProfile", ...)
-   ...: profile = bsky.get_user_profile("did:plc:zcmchxw2gxlbincrchpdjopq")
-
-In [6]: profile.displayName
-Out[6]: "It's The Weekend 😌"
-
-In [7]: # this won't require a call to the API because the record has been saved
-   ...: profile = bsky.get_user_profile(profile.handle)
+In [5]: profile.displayName
+Out[5]: "It's The Weekend 😌"
 ```
-
-`get_user_profile()` is an example of a wrapper for `get()` that caches the response data in the database, though that approach may not always be helpful or necessary. It may also cause a problem, depending on the use case, if the data that gets cached locally changes remotely. `get_user_profile()` takes an optional `force_remote_call` boolean argument to work around this.
 
 Most interaction with this library happens through just a few different methods:
 
