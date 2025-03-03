@@ -356,7 +356,7 @@ Another way to retrieve data that's earlier than the latest saved cursor is to u
 
 In the above example, when the cursor is looked up in the database, it filters on the endpoint and request_did fields of the `api_call_log` table. Sometimes this is not enough, as different types of data can be returned from the same endpoint. Such as `com.atproto.repo.listRecords` returning both blocks and follows, each of which should have its own cursor. To ensure that the right cursor is looked up in this scenario, the method that's decorated by `@process_cursor` should have a `cursor_key_func` default argument that takes the kwargs and returns a string that, together with request_did and endpoint, uniquely identifies the scope to which the cursor should apply. For example:
 
-```
+```python
 @process_cursor
 def list_records(
     self,
