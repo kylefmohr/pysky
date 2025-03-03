@@ -256,7 +256,9 @@ class BskyClient(object):
             )
             try:
                 response_object = json.loads(r.text, object_hook=lambda d: SimpleNamespace(**d))
-                response_object.http = SimpleNamespace(headers = r.headers, status_code=r.status_code, elapsed=r.elapsed, url=r.url)
+                response_object.http = SimpleNamespace(
+                    headers=r.headers, status_code=r.status_code, elapsed=r.elapsed, url=r.url
+                )
             except json.JSONDecodeError:
                 response_object = SimpleNamespace()
 
@@ -491,7 +493,9 @@ class BskyClient(object):
         **kwargs,
     ):
         # cursor usage notes: https://github.com/bluesky-social/atproto/issues/2760 (specific to this endpoint)
-        return self.get(hostname=HOSTNAME_CHAT, endpoint=endpoint, params={"cursor": cursor}, **kwargs)
+        return self.get(
+            hostname=HOSTNAME_CHAT, endpoint=endpoint, params={"cursor": cursor}, **kwargs
+        )
 
     def get_user_profile(self, actor, force_remote_call=False):
         """Either a user handle or DID can be passed to this method. Handle
