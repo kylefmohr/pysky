@@ -7,9 +7,7 @@ def test_cursor(bsky):
 
     endpoint = "xrpc/com.atproto.repo.listRecords"
 
-    cursor_count = APICallLog.select() \
-                .where(APICallLog.endpoint == endpoint) \
-                .count()
+    cursor_count = APICallLog.select().where(APICallLog.endpoint == endpoint).count()
     assert cursor_count == 0
 
     follows = bsky.list_follows()
@@ -17,17 +15,27 @@ def test_cursor(bsky):
     assert len(follows.records) > 0
     assert len(blocks.records) > 0
 
-    cursor_1 = APICallLog.select() \
-                .where(APICallLog.endpoint == endpoint,
-                    APICallLog.cursor_received.is_null(False),
-                    APICallLog.cursor_key == "app.bsky.graph.block") \
-                .first().cursor_received
+    cursor_1 = (
+        APICallLog.select()
+        .where(
+            APICallLog.endpoint == endpoint,
+            APICallLog.cursor_received.is_null(False),
+            APICallLog.cursor_key == "app.bsky.graph.block",
+        )
+        .first()
+        .cursor_received
+    )
 
-    cursor_2 = APICallLog.select() \
-                .where(APICallLog.endpoint == endpoint,
-                    APICallLog.cursor_received.is_null(False),
-                    APICallLog.cursor_key == "app.bsky.graph.follow") \
-                .first().cursor_received
+    cursor_2 = (
+        APICallLog.select()
+        .where(
+            APICallLog.endpoint == endpoint,
+            APICallLog.cursor_received.is_null(False),
+            APICallLog.cursor_key == "app.bsky.graph.follow",
+        )
+        .first()
+        .cursor_received
+    )
 
     assert cursor_1
     assert cursor_2

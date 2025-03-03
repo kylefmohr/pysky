@@ -9,12 +9,14 @@ from tests.decorators import run_without_env_vars
 # enforce single instance of each client type
 _client_cache = {}
 
+
 def get_client(name):
     global _client_cache
     if name in _client_cache:
         return _client_cache[name]
 
     import pysky
+
     bsky = pysky.BskyClientTestMode()
     _client_cache[name] = bsky
     return bsky
