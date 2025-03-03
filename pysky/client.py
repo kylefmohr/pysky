@@ -24,8 +24,10 @@ INITIAL_CURSOR = {
     "xrpc/chat.bsky.convo.getLog": ZERO_CURSOR,
 }
 
+
 class RefreshSessionRecursion(Exception):
     pass
+
 
 class APIError(Exception):
 
@@ -80,7 +82,10 @@ class BskyClient(object):
             # only provide the database-backed cursor if one was not passed manually
             if not "cursor" in kwargs:
 
-                where_expressions = [APICallLog.endpoint == endpoint, APICallLog.cursor_received.is_null(False)]
+                where_expressions = [
+                    APICallLog.endpoint == endpoint,
+                    APICallLog.cursor_received.is_null(False),
+                ]
 
                 cursor_key = _cursor_key_func(kwargs)
 
@@ -198,8 +203,10 @@ class BskyClient(object):
     def refresh_session(self):
         # i can't reproduce it, but once i saw a "maximum recursion depth exceeded"
         # exception here. i added this code to check for it.
-        if [f.function for f in inspect.stack()].count('refresh_session') > 1:
-            raise RefreshSessionRecursion(f"refresh_session recursion: {','.join(f.function for f in inspect.stack())}")
+        if [f.function for f in inspect.stack()].count("refresh_session") > 1:
+            raise RefreshSessionRecursion(
+                f"refresh_session recursion: {','.join(f.function for f in inspect.stack())}"
+            )
         self.create_session(method=SESSION_METHOD_REFRESH)
 
     def serialize(self):
@@ -341,7 +348,7 @@ class BskyClient(object):
 
             apilog.response_keys = ",".join(sorted(response_object.__dict__.keys()))
 
-            if 'cursor_mgmt' in [f.function for f in inspect.stack()]:
+            if "cursor_mgmt" in [f.function for f in inspect.stack()]:
                 apilog.cursor_received = getattr(response_object, "cursor", None)
                 apilog.cursor_key = cursor_key
 
@@ -450,7 +457,7 @@ class BskyClient(object):
         collection_attr="records",
         paginate=True,
         collection=None,
-        cursor_key_func=lambda kwargs: kwargs['collection'],
+        cursor_key_func=lambda kwargs: kwargs["collection"],
         **kwargs,
     ):
         assert collection, "collection argument must be given to list_records()"
@@ -458,7 +465,7 @@ class BskyClient(object):
             hostname=HOSTNAME_ENTRYWAY,
             endpoint=endpoint,
             params={"cursor": cursor, "repo": self.get_did(), "collection": collection},
-            **kwargs
+            **kwargs,
         )
 
     def list_follows(self, **kwargs):
@@ -493,7 +500,7 @@ class BskyClient(object):
         except (BskyUserProfile.DoesNotExist, AssertionError):
             endpoint = "xrpc/app.bsky.actor.getProfile"
             response = self.get(endpoint=endpoint, params={"actor": actor})
-            user = BskyUserProfile.get_or_none(BskyUserProfile.did==response.did)
+            user = BskyUserProfile.get_or_none(BskyUserProfile.did == response.did)
             if not user:
                 user = BskyUserProfile(did=response.did)
             user.handle = response.handle
