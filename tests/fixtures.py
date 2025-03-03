@@ -6,19 +6,31 @@ import pytest
 
 from tests.decorators import run_without_env_vars
 
+# enforce single instance of each client type
+_client_cache = {}
 
-@pytest.fixture
+def get_client(name):
+    global _client_cache
+    if name in _client_cache:
+        return _client_cache[name]
+
+    import pysky
+    bsky = pysky.BskyClientTestMode()
+    _client_cache[name] = bsky
+    return bsky
+
+
+@pytest.fixture(scope="session", autouse=True)
 @run_without_env_vars(
     ["PGDATABASE", "PGUSER", "PGHOST", "PGPASSWORD", "PGPORT", "BSKY_SQLITE_FILENAME"]
 )
 def bsky():
     assert os.getenv("PGDATABASE") is None
-    import pysky
+    assert os.getenv("BSKY_AUTH_USERNAME") is not None
+    return get_client("auth")
 
-    return pysky.BskyClientTestMode()
 
-
-@pytest.fixture
+@pytest.fixture(scope="session", autouse=True)
 @run_without_env_vars(
     [
         "PGDATABASE",
@@ -34,6 +46,4 @@ def bsky():
 def bsky_no_auth():
     assert os.getenv("PGDATABASE") is None
     assert os.getenv("BSKY_AUTH_USERNAME") is None
-    import pysky
-
-    return pysky.BskyClientTestMode()
+    return get_client("noauth")
