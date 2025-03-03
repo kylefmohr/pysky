@@ -4,7 +4,6 @@ A small Bluesky API library backed by a database to enable some quality of life 
 * Automatic session caching/refreshing
 * Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are returned and that each object is only returned once
 * Logging - metadata for all API calls and responses (including exceptions) is stored in the database
-* Cached user profiles for local DID/handle lookups
 
 ## Installation / Setup
 
@@ -41,6 +40,8 @@ Out[6]: "It's The Weekend 😌"
 In [7]: # this won't require a call to the API because the record has been saved
    ...: profile = bsky.get_user_profile(profile.handle)
 ```
+
+`get_user_profile()` is an example of a wrapper for `get()` that caches the response data, though that approach may not always be helpful or necessary. It may also cause a problem, depending on the use case, if the data that gets cached locally changes remotely. `get_user_profile()` takes an optional `force_remote_call` boolean argument to work around this.
 
 Most interaction with this library happens through just a few different methods:
 
@@ -301,11 +302,6 @@ The fourth call passes the zero cursor manually which gets all data going back t
 
 Another way to retrieve data that's earlier than the latest saved cursor is to update/delete the row(s) in the `api_call_log` table for this endpoint to remove cursor history.
 
-## Cached User Profiles
-
-User DID/handle/display name will be saved to the bsky_user_profile table if the API is called through this method: `BskyClient.get_user_profile(actor)`. Though not if called through `bsky.get(endpoint="xrpc/app.bsky.actor.getProfile", ...)`.
-
-Note that handles and display names that are updated on Bluesky won't be seen if using the local cached version of data. To force updating the database cached data with live data from the API, pass `force_remote_call=True` to `get_user_profile()`.
 
 ## Rate Limit Monitoring
 
