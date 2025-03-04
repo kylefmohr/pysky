@@ -3,6 +3,7 @@ import re
 import sys
 import json
 import inspect
+import mimetypes
 from time import time
 from types import SimpleNamespace
 from datetime import datetime
@@ -12,6 +13,7 @@ from pysky.logging import log
 from pysky.models import BskySession, BskyUserProfile, APICallLog
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
+from pysky.image import ensure_resized_image
 
 HOSTNAME_PUBLIC = "public.api.bsky.app"
 HOSTNAME_ENTRYWAY = "bsky.social"
@@ -324,6 +326,38 @@ class BskyClient(object):
     @staticmethod
     def is_expired_token_response(r):
         return r.status_code == 400 and r.json()["error"] == "ExpiredToken"
+
+    def upload_image(
+        self, image_bytes=None, image_path=None, mimetype=None, extension=None, allow_resize=True
+    ):
+
+        if image_path and not mimetype:
+            mimetype, _ = mimetypes.guess_file_type(image_path)
+        elif extension and not mimetype:
+            mimetype, _ = mimetypes.guess_file_type(f"image.{extension}")
+
+        if not mimetype:
+            raise Exception(
+                "mimetype must be provided, or else an image_path or extension from which the mimetype can be guessed."
+            )
+
+        if image_path and not image_bytes:
+            image_bytes = open(image_path, "rb").read()
+
+        if not image_bytes:
+            raise Exception("image_bytes not present in upload_image")
+
+        if allow_resize:
+            original_size = len(image_bytes)
+            image_bytes, resized, original_dimensions, new_dimensions = ensure_resized_image(
+                image_bytes
+            )
+            if resized:
+                log.warning(
+                    f"{original_size} bytes resized to {len(image_bytes)} bytes, {original_dimensions} -> {new_dimensions} ({mimetype})"
+                )
+
+        return self.upload_blob(image_bytes, mimetype)
 
     def upload_blob(self, blob_data, mimetype, hostname=HOSTNAME_ENTRYWAY):
         return self.post(
