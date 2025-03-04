@@ -57,4 +57,4 @@ class APICallLog(BaseModel):
     duration_microseconds = IntegerField(null=True)
 
     class Meta:
-        table_name = "api_call_log"
+        table_name = "bsky_api_call_log"

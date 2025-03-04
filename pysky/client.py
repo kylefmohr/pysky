@@ -300,7 +300,7 @@ class BskyClient(object):
         if err_prefix:
             log.error(err_prefix)
             log.error("For more details run the query:")
-            log.error(f"SELECT * FROM api_call_log WHERE id={apilog.id};")
+            log.error(f"SELECT * FROM bsky_api_call_log WHERE id={apilog.id};")
 
         if apilog.http_status_code and apilog.http_status_code >= 400:
             raise APIError(
