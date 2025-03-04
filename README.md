@@ -10,7 +10,7 @@ These are features that I happened to want for another Bluesky project and I bro
 
 ## Installation / Setup
 
-1. Clone the repo and install the few dependencies: requests, peewee, and psycopg2-binary. The latter is unnecessary if not using PostgreSQL.
+1. Clone the repo, add it to PYTHONPATH, and install the few dependencies: requests, peewee, and psycopg2-binary. The latter is unnecessary if not using PostgreSQL.
 
 2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
 
