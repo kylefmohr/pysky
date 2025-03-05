@@ -28,7 +28,6 @@ def resize_image(image_data):
         image.thumbnail(ts)
         image_data_out = io.BytesIO()
         image.save(image_data_out, format=image.format)
-        image.save(f"resize.{image.format.lower()}", format=image.format)
         image_data_out = image_data_out.getvalue()
         final_length = len(image_data_out)
         if len(image_data_out) < MAX_ALLOWED_IMAGE_SIZE:
