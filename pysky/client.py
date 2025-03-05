@@ -330,7 +330,6 @@ class BskyClient(object):
     def upload_image(
         self, image_bytes=None, image_path=None, mimetype=None, extension=None, allow_resize=True
     ):
-
         if image_path and not mimetype:
             mimetype, _ = mimetypes.guess_file_type(image_path)
         elif extension and not mimetype:

@@ -5,12 +5,13 @@ A Bluesky API library backed by a database to enable some quality of life applic
 * Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are returned and that each object is only returned once
 * Logging - metadata for all API calls and responses (including exceptions) is stored in the database
 * Rate limit monitoring
+* Image resizing, as needed during uploads, to stay within the size limit
 
 These are features that I happened to want for another Bluesky project and I broke off the code into this library.
 
 ## Installation / Setup
 
-1. Clone the repo, add it to PYTHONPATH, and install the few dependencies: requests, peewee, and psycopg2-binary. The latter is unnecessary if not using PostgreSQL.
+1. Clone the repo, add it to PYTHONPATH, and install the few required dependencies: [requests](https://pypi.org/project/requests/), [peewee](https://pypi.org/project/peewee/), [psycopg2-binary](https://pypi.org/project/psycopg2-binary/), [pillow](https://pypi.org/project/pillow/). The latter two aren't required if not using PostgreSQL or the image resizing feature, respectively.
 
 2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
 
@@ -44,6 +45,7 @@ Most interaction with this library happens through just a few different methods:
 * Calling `BskyClient.get()` and `BskyClient.post()`
 * See `pysky/client.py` for examples of convenience methods wrapping `get()` and `post()`:
     * `BskyClient.upload_blob()`
+    * `BskyClient.upload_image()`
     * `BskyClient.create_record()`
     * `BskyClient.create_post()`
     * `BskyClient.delete_record()`
@@ -217,6 +219,19 @@ Upon the first attempted request to a hostname other than the public `public.api
 If on the first (or any subsequent) use of the current session the API responds with an `ExpiredToken` error, a new session is established and saved to `bsky_session`. The API call that was interrupted by the expiration is automatically repeated with the new session.
 
 If a request is made to the default public hostname `public.api.bsky.app` then the session headers, if a session has been established, are not sent in the request.
+
+
+## Image Resizing
+
+While the Bluesky frontend will accept a large image and resize it as needed to stay within the 976.56KB size limit, the API does not. Images posted must be within the limit. The `BskyClient.upload_image()` method will automatically attempt to do this resizing while preserving the aspect ratio.
+
+```python
+BskyClient.upload_image(image_bytes=None, image_path=None, mimetype=None, extension=None, allow_resize=True)
+```
+
+You can pass either a file path or image bytes. The mimetype will be guessed from either path or extension if not passed explicitly. At least one of image_path, mimetype, or extension must be passed.
+
+If you don't wish to install pillow and use this feature, pass `allow_resize=False` to `BskyClient.upload_image()`.
 
 ## Database Logging
 
