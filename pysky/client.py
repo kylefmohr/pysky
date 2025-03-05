@@ -14,6 +14,7 @@ from pysky.models import BskySession, BskyUserProfile, APICallLog
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
 from pysky.image import ensure_resized_image
+from pysky.helpers import get_post
 
 HOSTNAME_PUBLIC = "public.api.bsky.app"
 HOSTNAME_ENTRYWAY = "bsky.social"
@@ -376,7 +377,9 @@ class BskyClient(object):
             hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.createRecord", params=params
         )
 
-    def create_post(self, post):
+    def create_post(self, post=None, text=None, blob_uploads=None, alt_texts=None):
+        if not post:
+            post = get_post(text, blob_uploads or [], alt_texts or [])
         return self.create_record("app.bsky.feed.post", post)
 
     def delete_record(self, collection, rkey):
