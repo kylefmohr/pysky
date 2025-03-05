@@ -366,11 +366,11 @@ class BskyClient(object):
             hostname=hostname,
         )
 
-    def create_record(self, collection, post):
+    def create_record(self, collection, record):
         params = {
             "repo": self.get_did(),
             "collection": collection,
-            "record": post,
+            "record": record,
         }
         return self.post(
             hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.createRecord", params=params
