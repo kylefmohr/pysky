@@ -129,6 +129,7 @@ class BskyClient(object):
         bs.save()
 
     def load_serialized_session(self):
+        assert self.bsky_auth_username, "no bsky_auth_username when checking for cached session"
         try:
             db_session = (
                 BskySession.select()
@@ -183,25 +184,11 @@ class BskyClient(object):
     ):
         uri = f"https://{hostname}/{endpoint}"
 
-        write_op_points_cost = WRITE_OP_POINTS_MAP.get(endpoint, 0)
-        if write_op_points_cost > 0:
-            check_write_ops_budget(
-                hours=1,
-                points_to_use=write_op_points_cost,
-                override_budget=getattr(self, "override_budgets", {}).get(1),
-            )
-            check_write_ops_budget(
-                hours=24,
-                points_to_use=write_op_points_cost,
-                override_budget=getattr(self, "override_budgets", {}).get(24),
-            )
-
         apilog = APICallLog(
             endpoint=endpoint,
             method=method.__name__,
             hostname=hostname,
             cursor_passed=params.get("cursor") if params else None,
-            write_op_points_consumed=write_op_points_cost,
         )
 
         args = {}
@@ -229,6 +216,23 @@ class BskyClient(object):
             if auth_method == AUTH_METHOD_TOKEN:
                 args["headers"].update(self.auth_header)
                 apilog.request_did = self.did
+
+
+        write_op_points_cost = WRITE_OP_POINTS_MAP.get(endpoint, 0)
+        apilog.write_op_points_consumed = write_op_points_cost
+        if write_op_points_cost > 0:
+            check_write_ops_budget(
+                self.did,
+                hours=1,
+                points_to_use=write_op_points_cost,
+                override_budget=getattr(self, "override_budgets", {}).get(1),
+            )
+            check_write_ops_budget(
+                self.did,
+                hours=24,
+                points_to_use=write_op_points_cost,
+                override_budget=getattr(self, "override_budgets", {}).get(24),
+            )
 
         params = params or {}
         # additional **kwargs passed through to here will get added to params, for convenience
@@ -353,10 +357,6 @@ class BskyClient(object):
             image_data, resized, original_dimensions, new_dimensions = ensure_resized_image(
                 image_data
             )
-            if resized:
-                log.warning(
-                    f"{original_size} bytes resized to {len(image_data)} bytes, {original_dimensions} -> {new_dimensions} ({mimetype})"
-                )
 
         return self.upload_blob(image_data, mimetype)
 

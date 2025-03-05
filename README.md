@@ -226,7 +226,7 @@ Vary: Accept-Encoding
 
 ## Session Management
 
-Upon the first attempted request to a hostname other than the public `public.api.bsky.app`, `BskyClient` checks the database for the most recent cached session, an accessJwt/refreshJwt pair serialized to the table `bsky_session`. If none exist and the `BSKY_AUTH_USERNAME/BSKY_AUTH_PASSWORD` environment variables are set, a session is established and saved to the table. If the credentials aren't set, a `pysky.NotAuthenticated` exception will be raised.
+Upon the first attempted request to a hostname other than the public `public.api.bsky.app`, `BskyClient` checks the database for the most recent cached session (an accessJwt/refreshJwt pair) in the table `bsky_session` for the same `BSKY_AUTH_USERNAME`. If none exist and the `BSKY_AUTH_USERNAME/BSKY_AUTH_PASSWORD` environment variables are set, a session is established and saved to the table. If the credentials aren't set, a `pysky.NotAuthenticated` exception will be raised.
 
 If on the first (or any subsequent) use of the current session the API responds with an `ExpiredToken` error, a new session is established and saved to `bsky_session`. The API call that was interrupted by the expiration is automatically repeated with the new session.
 
