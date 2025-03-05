@@ -125,7 +125,19 @@ There's an `upload_blob()` wrapper method for this:
 response = bsky.upload_blob(blob_data=blob_data, mimetype="image/png")
 ```
 
-To create a post with two images attached:
+To create a post with two images attached using the `create_post()` wrapper for `post()`:
+
+```python
+In [1]: blobs = [bsky.upload_image(image_path=f) for f in ["file1.jpg","file2.jpg"]]
+
+In [2]: alt_texts = ["image 1 alt text", "image 2 alt text"]
+
+In [3]: response = bsky.create_post(text="example post with two images attached",
+                                    blob_uploads=blobs,
+                                    alt_texts=alt_texts)
+```
+
+As mentioned, there are only a few convenience functions like this that wrap `get()` and `post()`. Here's the equivalent post using the lower level APIs. Note that `upload_blob()` will not attempt to resize images that are too large as `upload_image()` will, because not all blobs are assumed to be images.
 
 ```python
 In [1]: from datetime import datetime, timezone
@@ -135,7 +147,7 @@ In [2]: img1 = bsky.upload_blob(blob_data=open("file1.png", "rb").read(), mimety
 
 In [3]: images = [
    ...:       {
-   ...:         "alt": "alt text 1",
+   ...:         "alt": "image 1 alt text",
    ...:         "image": {
    ...:           "$type": "blob",
    ...:           "ref": {
@@ -146,7 +158,7 @@ In [3]: images = [
    ...:         }
    ...:       },
    ...:       {
-   ...:         "alt": "alt text 2",
+   ...:         "alt": "image 2 alt text",
    ...:         "image": {
    ...:           "$type": "blob",
    ...:           "ref": {
