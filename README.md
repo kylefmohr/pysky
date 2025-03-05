@@ -128,7 +128,7 @@ response = bsky.upload_blob(blob_data=blob_data, mimetype="image/png")
 To create a post with two images attached using the `create_post()` wrapper for `post()`:
 
 ```python
-In [1]: blobs = [bsky.upload_image(image_path=f) for f in ["file1.jpg","file2.jpg"]]
+In [1]: blobs = [bsky.upload_image(image_path=f) for f in ["file1.png","file2.png"]]
 
 In [2]: alt_texts = ["image 1 alt text", "image 2 alt text"]
 

@@ -133,6 +133,7 @@ class BskyClient(object):
             db_session = (
                 BskySession.select()
                 .where(BskySession.exception.is_null())
+                .where(BskySession.bsky_auth_username == self.bsky_auth_username)
                 .order_by(BskySession.created_at.desc())[0]
             )
             self.__dict__.update(db_session.__dict__["__data__"])

@@ -19,6 +19,7 @@ class BaseModel(Model):
 class BskySession(BaseModel):
     accessJwt = CharField()
     refreshJwt = CharField()
+    bsky_auth_username = CharField()
     did = CharField()
     created_at = DateTimeField()
     create_method = IntegerField()
