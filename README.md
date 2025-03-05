@@ -1,5 +1,5 @@
 # pysky
-A Bluesky API library backed by a database to enable some quality of life application-level features:
+A Bluesky API library with database logging/caching and some quality of life application-level features:
 
 * Automatic session caching/refreshing
 * Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are returned and that each object is only returned once
@@ -7,7 +7,7 @@ A Bluesky API library backed by a database to enable some quality of life applic
 * Rate limit monitoring
 * Image resizing, as needed during uploads, to stay within the size limit
 
-These are features that I happened to want for another Bluesky project and I broke off the code into this library.
+These are features that I needed for other Bluesky projects, and I broke off the library code into this project.
 
 ## Installation / Setup
 
@@ -226,12 +226,16 @@ If a request is made to the default public hostname `public.api.bsky.app` then t
 While the Bluesky frontend will accept a large image and resize it as needed to stay within the 976.56KB size limit, the API does not. Images posted must be within the limit. The `BskyClient.upload_image()` method will automatically attempt to do this resizing while preserving the aspect ratio.
 
 ```python
-BskyClient.upload_image(image_bytes=None, image_path=None, mimetype=None, extension=None, allow_resize=True)
+BskyClient.upload_image(image_data=None,
+                        image_path=None,
+                        mimetype=None,
+                        extension=None,
+                        allow_resize=True)
 ```
 
-You can pass either a file path or image bytes. The mimetype will be guessed from either path or extension if not passed explicitly. At least one of image_path, mimetype, or extension must be passed.
+You can pass either a file path or image bytes. The mimetype will be guessed from either the path or extension if not passed explicitly. At least one of image_path, mimetype, or extension must be passed.
 
-If you don't wish to install pillow and use this feature, pass `allow_resize=False` to `BskyClient.upload_image()`.
+If you don't wish to install pillow and use this feature, pass `allow_resize=False`.
 
 ## Database Logging
 
