@@ -328,7 +328,7 @@ class BskyClient(object):
         return r.status_code == 400 and r.json()["error"] == "ExpiredToken"
 
     def upload_image(
-        self, image_bytes=None, image_path=None, mimetype=None, extension=None, allow_resize=True
+        self, image_data=None, image_path=None, mimetype=None, extension=None, allow_resize=True
     ):
         if image_path and not mimetype:
             mimetype, _ = mimetypes.guess_file_type(image_path)
@@ -340,23 +340,23 @@ class BskyClient(object):
                 "mimetype must be provided, or else an image_path or extension from which the mimetype can be guessed."
             )
 
-        if image_path and not image_bytes:
-            image_bytes = open(image_path, "rb").read()
+        if image_path and not image_data:
+            image_data = open(image_path, "rb").read()
 
-        if not image_bytes:
-            raise Exception("image_bytes not present in upload_image")
+        if not image_data:
+            raise Exception("image_data not present in upload_image")
 
         if allow_resize:
-            original_size = len(image_bytes)
-            image_bytes, resized, original_dimensions, new_dimensions = ensure_resized_image(
-                image_bytes
+            original_size = len(image_data)
+            image_data, resized, original_dimensions, new_dimensions = ensure_resized_image(
+                image_data
             )
             if resized:
                 log.warning(
-                    f"{original_size} bytes resized to {len(image_bytes)} bytes, {original_dimensions} -> {new_dimensions} ({mimetype})"
+                    f"{original_size} bytes resized to {len(image_data)} bytes, {original_dimensions} -> {new_dimensions} ({mimetype})"
                 )
 
-        return self.upload_blob(image_bytes, mimetype)
+        return self.upload_blob(image_data, mimetype)
 
     def upload_blob(self, blob_data, mimetype, hostname=HOSTNAME_ENTRYWAY):
         return self.post(
