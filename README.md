@@ -199,7 +199,7 @@ The response from `bsky.get()` and `bsky.post()` is the JSON response from Blues
 
 The response is otherwise unmodified, so refer to the [API docs](https://docs.bsky.app/docs/category/http-reference) for the response schema of a given call.
 
-An `http` attribute is added to the response with these fields from the http response object: headers, status_code, elapsed, url
+An `http` attribute is added to the response with these fields from the http response object: headers, status_code, elapsed, url.
 
 ```python
 
@@ -226,7 +226,7 @@ Vary: Accept-Encoding
 
 ## Session Management
 
-Upon the first attempted request to a hostname other than the public `public.api.bsky.app`, `BskyClient` checks the database for the most recent cached session (an accessJwt/refreshJwt pair) in the table `bsky_session` for the same `BSKY_AUTH_USERNAME`. If none exist and the `BSKY_AUTH_USERNAME/BSKY_AUTH_PASSWORD` environment variables are set, a session is established and saved to the table. If the credentials aren't set, a `pysky.NotAuthenticated` exception will be raised.
+Upon the first attempted request to a hostname other than the public `public.api.bsky.app`, the database is checked for the most recent cached session (an accessJwt/refreshJwt pair) in the table `bsky_session` for the same `BSKY_AUTH_USERNAME`. If none exist and the `BSKY_AUTH_USERNAME/BSKY_AUTH_PASSWORD` environment variables are set, a session is established and saved to the table. If the credentials aren't set, a `pysky.NotAuthenticated` exception will be raised.
 
 If on the first (or any subsequent) use of the current session the API responds with an `ExpiredToken` error, a new session is established and saved to `bsky_session`. The API call that was interrupted by the expiration is automatically repeated with the new session.
 
@@ -279,6 +279,8 @@ id                       | 198960
 timestamp                | 2025-02-25 10:00:05.969271-05
 hostname                 | bsky.social
 endpoint                 | xrpc/app.bsky.feed.searchPosts
+request_did              | did:plc:5nwvsmfskjx5nmx4w3o35v6f
+cursor_key               |
 cursor_passed            |
 cursor_received          |
 method                   | get
