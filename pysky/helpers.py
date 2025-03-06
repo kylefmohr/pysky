@@ -2,12 +2,15 @@ from datetime import datetime, timezone
 from itertools import zip_longest
 
 
-def get_post(text, blob_uploads=None, alt_texts=None):
+def get_post(text, blob_uploads=None, alt_texts=None, facets=None):
     post = {
         "$type": "app.bsky.feed.post",
         "text": text,
         "createdAt": datetime.now(timezone.utc).isoformat(),
     }
+
+    if facets:
+        post["facets"] = facets
 
     if blob_uploads:
         post["embed"] = get_image_embed(blob_uploads, alt_texts)
@@ -43,3 +46,13 @@ def get_image(blob_upload, alt_text=None):
         image["aspectRatio"] = {"width": aspect_ratio[0], "height": aspect_ratio[1]}
 
     return image
+
+
+def get_facet(text, link_text, link_uri):
+    return {
+        "index": {
+            "byteStart": text.find(link_text),
+            "byteEnd": text.find(link_text) + len(link_text),
+        },
+        "features": [{"$type": "app.bsky.richtext.facet#link", "uri": link_uri}],
+    }
