@@ -48,3 +48,10 @@ def ensure_resized_image(image_data):
         return resized_image, True, original_dimensions, new_dimensions
 
     return image_data, False, None, None
+
+
+def get_aspect_ratio(image_data):
+    if not enable_image_operations:
+        return None
+
+    return Image.open(io.BytesIO(image_data)).size
