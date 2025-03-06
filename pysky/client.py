@@ -307,7 +307,7 @@ class BskyClient(object):
         if err_prefix:
             log.error(err_prefix)
             log.error(
-                "For more details run the query: SELECT * FROM bsky_api_call_log WHERE id={apilog.id};"
+                f"For more details run the query: SELECT * FROM bsky_api_call_log WHERE id={apilog.id};"
             )
 
         if apilog.http_status_code and apilog.http_status_code >= 400:
@@ -363,9 +363,7 @@ class BskyClient(object):
         try:
             uploaded_blob.aspect_ratio = get_aspect_ratio(image_data)
         except Exception as e:
-            log.warning(
-                f"error determining aspect ratio {image_path or ''} {e.__class__.__name__} - {e}"
-            )
+            pass
 
         return uploaded_blob
 

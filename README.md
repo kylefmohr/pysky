@@ -11,7 +11,7 @@ These are features that I needed for other Bluesky projects, and I broke off the
 
 ## Installation / Setup
 
-1. Clone the repo, add it to PYTHONPATH, and install the few required dependencies: [requests](https://pypi.org/project/requests/), [peewee](https://pypi.org/project/peewee/), [psycopg2-binary](https://pypi.org/project/psycopg2-binary/), [pillow](https://pypi.org/project/pillow/). The latter two aren't required if not using PostgreSQL or the image resizing feature, respectively.
+1. Clone the repo, add it to PYTHONPATH, and install the few required dependencies: [requests](https://pypi.org/project/requests/), [peewee](https://pypi.org/project/peewee/), [psycopg2-binary](https://pypi.org/project/psycopg2-binary/), [pillow](https://pypi.org/project/pillow/). The latter two aren't required if not using PostgreSQL or the image editing features, respectively.
 
 2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
 
