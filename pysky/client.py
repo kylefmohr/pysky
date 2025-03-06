@@ -13,7 +13,7 @@ from pysky.logging import log
 from pysky.models import BskySession, BskyUserProfile, APICallLog
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
-from pysky.image import ensure_resized_image
+from pysky.image import ensure_resized_image, get_aspect_ratio
 from pysky.helpers import get_post
 
 HOSTNAME_PUBLIC = "public.api.bsky.app"
@@ -307,8 +307,7 @@ class BskyClient(object):
 
         if err_prefix:
             log.error(err_prefix)
-            log.error("For more details run the query:")
-            log.error(f"SELECT * FROM bsky_api_call_log WHERE id={apilog.id};")
+            log.error("For more details run the query: SELECT * FROM bsky_api_call_log WHERE id={apilog.id};")
 
         if apilog.http_status_code and apilog.http_status_code >= 400:
             raise APIError(
@@ -358,7 +357,14 @@ class BskyClient(object):
                 image_data
             )
 
-        return self.upload_blob(image_data, mimetype)
+        uploaded_blob = self.upload_blob(image_data, mimetype)
+
+        try:
+            uploaded_blob.aspect_ratio = get_aspect_ratio(image_data)
+        except Exception as e:
+            log.warning(f"error determining aspect ratio {image_path or ''} {e.__class__.__name__} - {e}")
+
+        return uploaded_blob
 
     def upload_blob(self, blob_data, mimetype, hostname=HOSTNAME_ENTRYWAY):
         return self.post(
@@ -378,9 +384,9 @@ class BskyClient(object):
             hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.createRecord", params=params
         )
 
-    def create_post(self, post=None, text=None, blob_uploads=None, alt_texts=None):
+    def create_post(self, post=None, text=None, blob_uploads=None, alt_texts=None, facets=None):
         if not post:
-            post = get_post(text, blob_uploads or [], alt_texts or [])
+            post = get_post(text, blob_uploads or [], alt_texts or [], facets)
         return self.create_record("app.bsky.feed.post", post)
 
     def delete_record(self, collection, rkey):
