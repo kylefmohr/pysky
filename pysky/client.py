@@ -300,7 +300,7 @@ class BskyClient(object):
 
         err_prefix = None
         if apilog.exception_class:
-            err_prefix = f"{apilog.exception_class} - {apilog.exception_text}"
+            err_prefix = f"{apilog.http_status_code} {apilog.exception_class} - {apilog.exception_text}"
         elif apilog.http_status_code >= 400:
             err_prefix = f"Bluesky API returned HTTP {apilog.http_status_code}"
 
