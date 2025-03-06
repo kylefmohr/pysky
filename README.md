@@ -232,6 +232,7 @@ If on the first (or any subsequent) use of the current session the API responds 
 
 If a request is made to the default public hostname `public.api.bsky.app` then the session headers, if a session has been established, are not sent in the request.
 
+It's safe to use the library with multiple accounts in one database, as sessions are scoped to a username.
 
 ## Image Resizing
 
