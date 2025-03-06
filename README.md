@@ -5,7 +5,7 @@ A Bluesky API library with database logging/caching and some quality of life app
 * Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are returned and that each object is only returned once
 * Logging - metadata for all API calls and responses (including exceptions) is stored in the database
 * Rate limit monitoring
-* Image resizing, as needed during uploads, to stay within the size limit
+* Image upload helpers: automatically submit aspect ratio and resize images, as needed, to stay under the size limit
 
 These are features that I needed for other Bluesky projects, and I broke off the library code into this project.
 
