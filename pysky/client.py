@@ -553,12 +553,30 @@ class BskyClient(object):
                 return BskyUserProfile.get(BskyUserProfile.handle == actor)
         except (BskyUserProfile.DoesNotExist, AssertionError):
             endpoint = "xrpc/app.bsky.actor.getProfile"
-            response = self.get(endpoint=endpoint, params={"actor": actor})
-            user = BskyUserProfile.get_or_none(BskyUserProfile.did == response.did)
+            try:
+                response = self.get(endpoint=endpoint, params={"actor": actor})
+            except APIError as e:
+                log.error(e)
+                users = BskyUserProfile.select().where((BskyUserProfile.did==actor) | (BskyUserProfile.handle==actor))
+                user = users[0] if users else BskyUserProfile(did=actor, handle=actor)
+                user.handle = user.handle or actor
+                user.did = user.did or actor
+                user.error = e.message
+                user.save()
+                raise
+            user = BskyUserProfile.get_or_none(did=response.did)
             if not user:
                 user = BskyUserProfile(did=response.did)
-            user.handle = response.handle
-            user.displayName = getattr(response, "displayName", None)
+
+            fields = "handle,displayName,followersCount,followsCount,postsCount,description,createdAt".split(",")
+            for f in fields:
+                setattr(user, f, getattr(response, f, None))
+
+            associated_fields = "lists,feedgens,starterPacks,labeler".split(",")
+            for f in associated_fields:
+                setattr(user, f"associated_{f}", getattr(response.associated, f, None))
+
+            user.labels = ','.join(l.val for l in getattr(response, "labels", []))
             user.save()
             return user
 

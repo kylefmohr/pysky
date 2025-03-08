@@ -33,6 +33,17 @@ class BskyUserProfile(BaseModel):
     did = CharField(unique=True)
     handle = CharField(unique=True)
     displayName = CharField(null=True, column_name="displayName")
+    followersCount = IntegerField(null=True, column_name="followersCount")
+    followsCount = IntegerField(null=True, column_name="followsCount")
+    postsCount = IntegerField(null=True, column_name="postsCount")
+    labels = CharField(null=True)
+    description = CharField(null=True)
+    createdAt = DateTimeField(null=True, column_name="createdAt")
+    associated_lists = IntegerField(null=True)
+    associated_feedgens = IntegerField(null=True)
+    associated_starterPacks = IntegerField(null=True, column_name="associated_starterPacks")
+    associated_labeler = BooleanField(null=True)
+    error = CharField(null=True)
 
     class Meta:
         table_name = "bsky_user_profile"
