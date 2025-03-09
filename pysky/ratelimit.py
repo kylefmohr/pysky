@@ -34,7 +34,7 @@ def get_budget_used(did, hours):
     )
 
     try:
-        return budget_sum_row.sum
+        return budget_sum_row.sum or 0
     except AttributeError:
         return 0
 
