@@ -7,7 +7,7 @@ A Bluesky API library with database logging/caching and some quality of life app
 * Rate limit monitoring
 * Image upload helpers: automatically submit aspect ratio and resize images, as needed, to stay under the size limit
 
-These are features that I needed for other Bluesky projects, and I broke off the library code into this project.
+These are features that I needed for other Bluesky projects, and I broke off the library code into this project. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
 
 ## Installation / Setup
 
@@ -414,6 +414,7 @@ def list_records(
 
 There's a `BskyClient.get_user_profile(actor)` method (takes handle or DID, per the [API doc](https://docs.bsky.app/docs/api/app-bsky-actor-get-profile)) that wraps `.get(endpoint="xrpc/app.bsky.actor.getProfile", ...)` and saves the user profile record to the `bsky_user_profile` table in the database. If the user handle or DID is in the table, it will be returned from there without accessing the API. This table/model is useful for relations to other tables/models in the application, if applicable. To bypass the cache and avoid potentially stale data, pass `force_remote_call=True`. The table will still be updated with any changed data.
 
+For consistency, looking up a suspended/deleted account raises an `APIError` exception (rather than return None without an exception) so as not to have different non-200-response behavior as other methods wrapping get/post. In this case the `error` column in the `bsky_user_profile` table for the row created from this request will have the reason for a 400 error returned from `xrpc/app.bsky.actor.getProfile`.
 
 ## Rate Limit Monitoring for Write Operations
 
