@@ -215,6 +215,27 @@ namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3ljxq2ao
           ...)
 ```
 
+A reply can also be made by passing the reply data structure [documented here](https://docs.bsky.app/docs/advanced-guides/posts#replies) to `create_post` as the `reply` argument.
+
+```python
+In [1]: reply = {
+    ...:     "root": {
+    ...:         "uri": "at://did:plc:5nwvsmfskjx5nmx4w3o35v6f/app.bsky.feed.post/3ljoj6vxt2e2r",
+    ...:         "cid": "bafyreiemtom4dcbuzaz7unliimxlj6zeiz47cz3q37udvlxaolbk33hnce"
+    ...:     },
+    ...:     "parent": {
+    ...:         "uri": "at://did:plc:5nwvsmfskjx5nmx4w3o35v6f/app.bsky.feed.post/3ljoj6vxt2e2r",
+    ...:         "cid": "bafyreiemtom4dcbuzaz7unliimxlj6zeiz47cz3q37udvlxaolbk33hnce"
+    ...:     }
+    ...: }
+
+In [2]: bsky.create_post(text="test reply", reply=reply)
+Out[2]:
+namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3ljxspvtuxq2s',
+          cid='bafyreicdozcnnb4h7fxnfjohsfbz4bzrntiyx4srdvyqiykx6ixpttpmui',
+          ...)
+```
+
 
 ## Responses
 
