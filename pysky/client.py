@@ -27,7 +27,16 @@ INITIAL_CURSOR = {
     "xrpc/chat.bsky.convo.getLog": ZERO_CURSOR,
 }
 
-VALID_COLLECTIONS = ["app.bsky.actor.profile","app.bsky.feed.generator","app.bsky.feed.like","app.bsky.feed.post","app.bsky.graph.block","app.bsky.graph.follow","chat.bsky.actor.declaration"]
+VALID_COLLECTIONS = [
+    "app.bsky.actor.profile",
+    "app.bsky.feed.generator",
+    "app.bsky.feed.like",
+    "app.bsky.feed.post",
+    "app.bsky.graph.block",
+    "app.bsky.graph.follow",
+    "chat.bsky.actor.declaration",
+]
+
 
 class RefreshSessionRecursion(Exception):
     pass
@@ -301,7 +310,9 @@ class BskyClient(object):
 
         err_prefix = None
         if apilog.exception_class:
-            err_prefix = f"{apilog.http_status_code} {apilog.exception_class} - {apilog.exception_text}"
+            err_prefix = (
+                f"{apilog.http_status_code} {apilog.exception_class} - {apilog.exception_text}"
+            )
         elif apilog.http_status_code >= 400:
             err_prefix = f"Bluesky API returned HTTP {apilog.http_status_code}"
 
@@ -387,11 +398,29 @@ class BskyClient(object):
             hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.createRecord", params=params
         )
 
-    def create_post(self, post=None, text=None, blob_uploads=None, alt_texts=None, facets=None, client_unique_key=None, reply_client_unique_key=None, reply=None):
+    def create_post(
+        self,
+        post=None,
+        text=None,
+        blob_uploads=None,
+        alt_texts=None,
+        facets=None,
+        client_unique_key=None,
+        reply_client_unique_key=None,
+        reply=None,
+    ):
 
         if reply_client_unique_key and not reply:
             # note - this lookup means you can't post a reply (by reply_client_unique_key) to a post created by a different account
-            parent = BskyPost.select().join(APICallLog).where(BskyPost.client_unique_key==reply_client_unique_key, APICallLog.request_did==self.get_did()).first()
+            parent = (
+                BskyPost.select()
+                .join(APICallLog)
+                .where(
+                    BskyPost.client_unique_key == reply_client_unique_key,
+                    APICallLog.request_did == self.get_did(),
+                )
+                .first()
+            )
             assert parent, "can't create a reply to an invalid parent"
 
             # to do - this does not populate root correctly for reply depth past 1
@@ -409,11 +438,17 @@ class BskyClient(object):
         response = self.create_record("app.bsky.feed.post", post)
 
         if response.apilog.http_status_code == 200:
-            create_kwargs = {"apilog": response.apilog, "cid": response.cid, "repo": self.get_did(), "uri": response.uri, "client_unique_key": client_unique_key, "reply_to": parent}
+            create_kwargs = {
+                "apilog": response.apilog,
+                "cid": response.cid,
+                "repo": self.get_did(),
+                "uri": response.uri,
+                "client_unique_key": client_unique_key,
+                "reply_to": parent,
+            }
             bsky_record = BskyPost.create(**create_kwargs)
 
         return response
-
 
     def delete_record(self, collection, rkey):
         params = {
@@ -582,7 +617,9 @@ class BskyClient(object):
                 response = self.get(endpoint=endpoint, params={"actor": actor})
             except APIError as e:
                 log.error(e)
-                users = BskyUserProfile.select().where((BskyUserProfile.did==actor) | (BskyUserProfile.handle==actor))
+                users = BskyUserProfile.select().where(
+                    (BskyUserProfile.did == actor) | (BskyUserProfile.handle == actor)
+                )
                 user = users[0] if users else BskyUserProfile(did=actor, handle=actor)
                 user.handle = user.handle or actor
                 user.did = user.did or actor
@@ -601,7 +638,7 @@ class BskyClient(object):
             for f in associated_fields:
                 setattr(user, f"associated_{f}", getattr(response.associated, f, None))
 
-            user.labels = ','.join(l.val for l in getattr(response, "labels", []))
+            user.labels = ",".join(l.val for l in getattr(response, "labels", []))
             user.save()
             return user
 

@@ -25,7 +25,7 @@ class RateLimitExceeded(Exception):
 def get_budget_used(did, hours):
 
     assert did
-    assert hours in [1,24]
+    assert hours in [1, 24]
     budget_sum_row = (
         APICallLog.select(fn.sum(APICallLog.write_op_points_consumed))
         .where(APICallLog.timestamp >= datetime.now(UTC) - timedelta(hours=hours))
@@ -42,7 +42,7 @@ def get_budget_used(did, hours):
 def check_write_ops_budget(did, hours, points_to_use, override_budget=None):
 
     assert did
-    assert hours in [1,24]
+    assert hours in [1, 24]
     budget = override_budget or WRITE_OPS_BUDGETS[hours]
 
     budget_used = get_budget_used(did, hours)
