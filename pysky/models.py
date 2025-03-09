@@ -70,3 +70,14 @@ class APICallLog(BaseModel):
 
     class Meta:
         table_name = "bsky_api_call_log"
+
+
+class BskyPost(BaseModel):
+    apilog = ForeignKeyField(APICallLog, unique=True)
+    uri = CharField()
+    cid = CharField()
+    client_unique_key = CharField(null=True)
+    reply_to = ForeignKeyField('self', backref='reply', null=True)
+
+    class Meta:
+        table_name = 'bsky_post'

@@ -10,7 +10,7 @@ from datetime import datetime
 import requests
 
 from pysky.logging import log
-from pysky.models import BskySession, BskyUserProfile, APICallLog
+from pysky.models import BskySession, BskyUserProfile, APICallLog, BskyPost
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
 from pysky.image import ensure_resized_image, get_aspect_ratio
@@ -27,6 +27,7 @@ INITIAL_CURSOR = {
     "xrpc/chat.bsky.convo.getLog": ZERO_CURSOR,
 }
 
+VALID_COLLECTIONS = ["app.bsky.actor.profile","app.bsky.feed.generator","app.bsky.feed.like","app.bsky.feed.post","app.bsky.graph.block","app.bsky.graph.follow","chat.bsky.actor.declaration"]
 
 class RefreshSessionRecursion(Exception):
     pass
@@ -327,6 +328,7 @@ class BskyClient(object):
                 f"Failed request, status code {r.status_code} ({getattr(apilog, 'exception_class', '')})"
             )
 
+        response_object.apilog = apilog
         return response_object
 
     @staticmethod
@@ -385,10 +387,33 @@ class BskyClient(object):
             hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.createRecord", params=params
         )
 
-    def create_post(self, post=None, text=None, blob_uploads=None, alt_texts=None, facets=None):
+    def create_post(self, post=None, text=None, blob_uploads=None, alt_texts=None, facets=None, client_unique_key=None, reply_client_unique_key=None, reply=None):
+
+        if reply_client_unique_key and not reply:
+            # note - this lookup means you can't post a reply (by reply_client_unique_key) to a post created by a different account
+            parent = BskyPost.select().join(APICallLog).where(BskyPost.client_unique_key==reply_client_unique_key, APICallLog.request_did==self.get_did()).first()
+            assert parent, "can't create a reply to an invalid parent"
+
+            # to do - this does not populate root correctly for reply depth past 1
+            reply = {
+                "root": {"uri": parent.uri, "cid": parent.cid},
+                "parent": {"uri": parent.uri, "cid": parent.cid},
+            }
+        else:
+            # to do - can i look this up if reply dict is passed? (probably)
+            parent = None
+
         if not post:
-            post = get_post(text, blob_uploads or [], alt_texts or [], facets)
-        return self.create_record("app.bsky.feed.post", post)
+            post = get_post(text, blob_uploads or [], alt_texts or [], facets, reply)
+
+        response = self.create_record("app.bsky.feed.post", post)
+
+        if response.apilog.http_status_code == 200:
+            create_kwargs = {"apilog": response.apilog, "cid": response.cid, "repo": self.get_did(), "uri": response.uri, "client_unique_key": client_unique_key, "reply_to": parent}
+            bsky_record = BskyPost.create(**create_kwargs)
+
+        return response
+
 
     def delete_record(self, collection, rkey):
         params = {
