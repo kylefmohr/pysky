@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from itertools import zip_longest
 
 
-def get_post(text, blob_uploads=None, alt_texts=None, facets=None):
+def get_post(text, blob_uploads=None, alt_texts=None, facets=None, reply=None):
     post = {
         "$type": "app.bsky.feed.post",
         "text": text,
@@ -11,6 +11,9 @@ def get_post(text, blob_uploads=None, alt_texts=None, facets=None):
 
     if facets:
         post["facets"] = facets
+
+    if reply:
+        post["reply"] = reply
 
     if blob_uploads:
         post["embed"] = get_image_embed(blob_uploads, alt_texts)
