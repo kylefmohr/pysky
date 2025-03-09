@@ -46,6 +46,8 @@ Most interaction with this library happens through just a few different methods:
 * See `pysky/client.py` for examples of convenience methods wrapping `get()` and `post()`:
     * `BskyClient.upload_blob()`
     * `BskyClient.upload_image()`
+    * `BskyClient.get_record()`
+    * `BskyClient.get_post()`
     * `BskyClient.create_record()`
     * `BskyClient.create_post()`
     * `BskyClient.delete_record()`
