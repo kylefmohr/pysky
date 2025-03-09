@@ -450,6 +450,20 @@ class BskyClient(object):
 
         return response
 
+
+    def get_record(self, collection, rkey, repo=None, **kwargs):
+        params = {
+            "repo": repo or self.get_did(),
+            "collection": collection,
+            "rkey": rkey,
+        }
+        return self.get(
+            endpoint="xrpc/com.atproto.repo.getRecord", params=params, **kwargs
+        )
+
+    def get_post(self, rkey, **kwargs):
+        return self.get_record("app.bsky.feed.post", rkey, **kwargs)
+
     def delete_record(self, collection, rkey):
         params = {
             "repo": self.get_did(),
