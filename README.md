@@ -63,7 +63,7 @@ Parameters to a GET or POST can be passed to `get()` or `post()` as either a `pa
 ```python
 In [1]: r = bsky.get(hostname="bsky.social",
                      endpoint="xrpc/com.atproto.repo.listRecords",
-                     repo="did:plc:zcmchxw2gxlbincrchpdjopq",
+                     repo="craigweekend.bsky.social",
                      collection="app.bsky.feed.post",
                      limit=17)
 
@@ -72,7 +72,7 @@ Out[2]: 17
 
 In [3]: r = bsky.get(hostname="bsky.social",
                      endpoint="xrpc/com.atproto.repo.listRecords",
-                     params={"repo": "did:plc:zcmchxw2gxlbincrchpdjopq",
+                     params={"repo": "craigweekend.bsky.social",
                              "collection": "app.bsky.feed.post",
                              "limit": 17})
 
@@ -234,6 +234,25 @@ Out[2]:
 namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3ljxspvtuxq2s',
           cid='bafyreicdozcnnb4h7fxnfjohsfbz4bzrntiyx4srdvyqiykx6ixpttpmui',
           ...)
+```
+
+Some sample code to build the reply dict:
+
+```python
+def get_reply_refs(bsky, repo, rkey):
+    post = bsky.get_post(rkey=rkey, repo=repo)
+    try:
+        # if this is a reply it has a post.value.reply attr with the root info
+        return {
+            "parent": {"cid": post.cid, "uri": post.uri},
+            "root": vars(post.value.reply.root)
+        }
+    except AttributeError:
+        # if this post is not a reply, it's both the root and parent
+        return {
+            "parent": {"cid": post.cid, "uri": post.uri},
+            "root": {"cid": post.cid, "uri": post.uri},
+        }
 ```
 
 
