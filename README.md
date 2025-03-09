@@ -193,6 +193,29 @@ namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3livdase
 
 Note that a `$link` attribute can't be accessed with dot notation due to the dollar sign, so `getattr(img1.blob.ref, '$link')` is required.
 
+## Replying to Posts
+
+When using the `create_post` convenience method you can optionally pass a `client_unique_key` value. To create a reply to that post, call `create_post` again and pass the `client_unique_key` from the first post as `reply_client_unique_key` to the second call.
+
+```python
+
+In [1]: bsky.create_post(text="test post",
+                         client_unique_key="original-post-57834357289")
+Out[1]:
+namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3ljxpzbltvg2q',
+          cid='bafyreihfe5snabvajtw25pq2hqzpqy3csgd24nhc6zc7tv5lizgtc44rri',
+          ...)
+
+In [2]: bsky.create_post(text="test reply",
+                         client_unique_key="original-post-57834357289-reply",
+                         reply_client_unique_key="original-post-57834357289")
+Out[2]:
+namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3ljxq2aouaa2p',
+          cid='bafyreietfnkhwosxzi2cjqt2xmcn5y6xqajnzxavjknsjh42lassmqrc3q',
+          ...)
+```
+
+
 ## Responses
 
 The response from `bsky.get()` and `bsky.post()` is the JSON response from Bluesky converted to a [SimpleNamespace](https://docs.python.org/3/library/types.html#types.SimpleNamespace) object. This is for the convenience of accessing attributes with dot notation rather than dict lookups.
