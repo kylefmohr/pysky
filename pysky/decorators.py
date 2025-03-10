@@ -1,9 +1,10 @@
 import inspect
 
 from pysky.models import APICallLog
+from pysky.exceptions import ExcessiveIteration
 
 ZERO_CURSOR = "2222222222222"
-INITIAL_CURSOR = {
+INITIAL_CURSOR_MAP = {
     "xrpc/chat.bsky.convo.getLog": ZERO_CURSOR,
 }
 
@@ -49,7 +50,7 @@ def process_cursor(func, **kwargs):
                 .first()
             )
 
-            initial_cursor = INITIAL_CURSOR.get(endpoint)
+            initial_cursor = INITIAL_CURSOR_MAP.get(endpoint)
             kwargs["cursor"] = (
                 previous_db_cursor.cursor_received if previous_db_cursor else initial_cursor
             )
