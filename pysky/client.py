@@ -1,27 +1,21 @@
-import os
 import re
-import sys
 import json
 import inspect
 import mimetypes
 from time import time
 from types import SimpleNamespace
-from datetime import datetime
 import requests
 
 from pysky.logging import log
+from pysky.session import Session
 from pysky.models import BskySession, BskyUserProfile, APICallLog, BskyPost
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
 from pysky.image import ensure_resized_image, get_aspect_ratio
 from pysky.helpers import get_post
 from pysky.exceptions import RefreshSessionRecursion, APIError, NotAuthenticated, ExcessiveIteration
+from pysky.constants import HOSTNAME_PUBLIC, HOSTNAME_ENTRYWAY, HOSTNAME_CHAT, AUTH_METHOD_PASSWORD, AUTH_METHOD_TOKEN
 
-HOSTNAME_PUBLIC = "public.api.bsky.app"
-HOSTNAME_ENTRYWAY = "bsky.social"
-HOSTNAME_CHAT = "api.bsky.chat"
-AUTH_METHOD_PASSWORD, AUTH_METHOD_TOKEN = range(2)
-SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
 
 ZERO_CURSOR = "2222222222222"
 INITIAL_CURSOR = {
@@ -42,97 +36,16 @@ VALID_COLLECTIONS = [
 class BskyClient(object):
 
     def __init__(self, ignore_cached_session=False):
-        self.auth_header = {}
-        self.ignore_cached_session = ignore_cached_session
+        self.session = Session(ignore_cached_session)
         self.remote_call_count = 0
 
-        try:
-            self.bsky_auth_username = os.environ["BSKY_AUTH_USERNAME"]
-            self.bsky_auth_password = os.environ["BSKY_AUTH_PASSWORD"]
-        except KeyError:
-            self.bsky_auth_username = ""
-            self.bsky_auth_password = ""
+    @property
+    def auth_header(self):
+        return self.session.auth_header
 
-    def load_or_create_session(self):
-
-        session = None
-
-        if not self.ignore_cached_session:
-            session = self.load_serialized_session()
-
-        if not session:
-            session = self.create_session()
-
-        return session
-
-    def create_session(self, method=SESSION_METHOD_CREATE):
-
-        if method == SESSION_METHOD_CREATE:
-
-            if not self.bsky_auth_username or not self.bsky_auth_password:
-                raise NotAuthenticated(
-                    "Invalid request in unauthenticated mode, no bsky credentials set"
-                )
-
-            session = self.post(
-                endpoint="xrpc/com.atproto.server.createSession",
-                auth_method=AUTH_METHOD_PASSWORD,
-                hostname=HOSTNAME_ENTRYWAY,
-            )
-        elif method == SESSION_METHOD_REFRESH:
-            session = self.post(
-                endpoint="xrpc/com.atproto.server.refreshSession",
-                use_refresh_token=True,
-                hostname=HOSTNAME_ENTRYWAY,
-            )
-        self.exception = None
-        self.accessJwt = session.accessJwt
-        self.refreshJwt = session.refreshJwt
-        self.did = session.did
-        self.create_method = method
-        self.created_at = datetime.now().isoformat()
-        self.serialize()
-        return self.set_auth_header()
-
-    def get_did(self):
-        try:
-            return self.did
-        except AttributeError:
-            self.load_or_create_session()
-            return self.did
-
-    def set_auth_header(self):
-        self.auth_header = {"Authorization": f"Bearer {self.accessJwt}"}
-        return self.auth_header
-
-    def refresh_session(self):
-        # i can't reproduce it, but once i saw a "maximum recursion depth exceeded"
-        # exception here. i added this code to check for it.
-        if [f.function for f in inspect.stack()].count("refresh_session") > 1:
-            raise RefreshSessionRecursion(
-                f"refresh_session recursion: {','.join(f.function for f in inspect.stack())}"
-            )
-        self.create_session(method=SESSION_METHOD_REFRESH)
-
-    def serialize(self):
-        bs = BskySession(**self.__dict__)
-        # cause a new record to be saved rather than updating the previous one
-        bs.id = None
-        bs.save()
-
-    def load_serialized_session(self):
-        assert self.bsky_auth_username, "no bsky_auth_username when checking for cached session"
-        try:
-            db_session = (
-                BskySession.select()
-                .where(BskySession.exception.is_null())
-                .where(BskySession.bsky_auth_username == self.bsky_auth_username)
-                .order_by(BskySession.created_at.desc())[0]
-            )
-            self.__dict__.update(db_session.__dict__["__data__"])
-            return self.set_auth_header()
-        except IndexError:
-            return None
+    @property
+    def did(self):
+        return self.session.get_did(self)
 
     def call_with_session_refresh(self, method, uri, args):
 
@@ -143,7 +56,7 @@ class BskyClient(object):
         session_was_refreshed = False
 
         if BskyClient.is_expired_token_response(r):
-            self.refresh_session()
+            self.session.refresh(self)
             args["headers"].update(self.auth_header)
             time_start = time()
             r = method(uri, **args)
@@ -192,7 +105,7 @@ class BskyClient(object):
 
             if auth_method == AUTH_METHOD_TOKEN and not self.auth_header:
                 # prevent request from happening without a valid session
-                self.load_or_create_session()
+                self.session.load_or_create(self)
 
             elif auth_method == AUTH_METHOD_PASSWORD:
                 # allow request to happen in order to establish a valid session
@@ -230,12 +143,9 @@ class BskyClient(object):
         params.update(kwargs)
 
         if auth_method == AUTH_METHOD_TOKEN and use_refresh_token:
-            args["headers"].update({"Authorization": f"Bearer {self.refreshJwt}"})
+            args["headers"].update({"Authorization": f"Bearer {self.session.refreshJwt}"})
         elif auth_method == AUTH_METHOD_PASSWORD:
-            args["json"] = {
-                "identifier": self.bsky_auth_username,
-                "password": self.bsky_auth_password,
-            }
+            args["json"] = self.session.to_dict()
 
         if params and method == requests.get:
             args["params"] = params
@@ -387,7 +297,7 @@ class BskyClient(object):
 
     def create_record(self, collection, record):
         params = {
-            "repo": self.get_did(),
+            "repo": self.did,
             "collection": collection,
             "record": record,
         }
@@ -414,7 +324,7 @@ class BskyClient(object):
                 .join(APICallLog)
                 .where(
                     BskyPost.client_unique_key == reply_client_unique_key,
-                    APICallLog.request_did == self.get_did(),
+                    APICallLog.request_did == self.did,
                 )
                 .first()
             )
@@ -449,7 +359,7 @@ class BskyClient(object):
             create_kwargs = {
                 "apilog": response.apilog,
                 "cid": response.cid,
-                "repo": self.get_did(),
+                "repo": self.did,
                 "uri": response.uri,
                 "client_unique_key": client_unique_key,
                 "reply_to": parent,
@@ -461,7 +371,7 @@ class BskyClient(object):
 
     def get_record(self, collection, rkey, repo=None, **kwargs):
         params = {
-            "repo": repo or self.get_did(),
+            "repo": repo or self.did,
             "collection": collection,
             "rkey": rkey,
         }
@@ -474,7 +384,7 @@ class BskyClient(object):
 
     def delete_record(self, collection, rkey):
         params = {
-            "repo": self.get_did(),
+            "repo": self.did,
             "collection": collection,
             "rkey": rkey,
         }
@@ -597,7 +507,7 @@ class BskyClient(object):
         return self.get(
             hostname=HOSTNAME_ENTRYWAY,
             endpoint=endpoint,
-            params={"cursor": cursor, "repo": self.get_did(), "collection": collection},
+            params={"cursor": cursor, "repo": self.did, "collection": collection},
             **kwargs,
         )
 
