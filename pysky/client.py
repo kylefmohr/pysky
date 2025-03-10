@@ -390,46 +390,6 @@ class BskyClient(object):
     def delete_post(self, post_id):
         return self.delete_record("app.bsky.feed.post", post_id)
 
-    def combine_paginated_responses(self, responses, collection_attr="logs"):
-
-        for page_response in responses[1:]:
-            combined_collection = getattr(responses[0], collection_attr) + getattr(
-                page_response, collection_attr
-            )
-            setattr(responses[0], collection_attr, combined_collection)
-
-        return responses[0]
-
-    def call_with_pagination(self, func, **kwargs):
-
-        assert "cursor" in kwargs, "called call_with_pagination without a cursor argument"
-        responses = []
-        iteration_count = 0
-        ITERATION_MAX = 1000
-
-        while True:
-
-            iteration_count += 1
-            if iteration_count > ITERATION_MAX:
-                raise ExcessiveIteration(
-                    f"tried to paginate through too many pages ({ITERATION_MAX})"
-                )
-
-            response = func(self, **kwargs)
-            responses.append(response)
-
-            try:
-                new_cursor = getattr(response, "cursor", kwargs["cursor"])
-                if new_cursor == kwargs["cursor"]:
-                    break
-
-                kwargs["cursor"] = new_cursor
-
-            except AttributeError:
-                raise
-
-        return responses
-
     @process_cursor
     def list_records(
         self,
