@@ -43,7 +43,6 @@ class BskyClient(object):
 
     def __init__(self, ignore_cached_session=False):
         self.session = Session(ignore_cached_session)
-        self.remote_call_count = 0
 
     @property
     def auth_header(self):
@@ -57,7 +56,6 @@ class BskyClient(object):
 
         time_start = time()
         r = method(uri, **args)
-        self.remote_call_count += 1
         time_end = time()
         session_was_refreshed = False
 
@@ -67,7 +65,6 @@ class BskyClient(object):
             time_start = time()
             r = method(uri, **args)
             time_end = time()
-            self.remote_call_count += 1
             session_was_refreshed = True
 
         return r, int((time_end - time_start) * 1000000), session_was_refreshed
