@@ -14,7 +14,13 @@ from pysky.bin.create_tables import create_non_existing_tables
 from pysky.image import ensure_resized_image, get_aspect_ratio
 from pysky.helpers import get_post
 from pysky.exceptions import RefreshSessionRecursion, APIError, NotAuthenticated, ExcessiveIteration
-from pysky.constants import HOSTNAME_PUBLIC, HOSTNAME_ENTRYWAY, HOSTNAME_CHAT, AUTH_METHOD_PASSWORD, AUTH_METHOD_TOKEN
+from pysky.constants import (
+    HOSTNAME_PUBLIC,
+    HOSTNAME_ENTRYWAY,
+    HOSTNAME_CHAT,
+    AUTH_METHOD_PASSWORD,
+    AUTH_METHOD_TOKEN,
+)
 
 
 ZERO_CURSOR = "2222222222222"
@@ -286,7 +292,7 @@ class BskyClient(object):
             # if this is a reply it has a post.value.reply attr with the root info
             return {
                 "parent": {"cid": post.cid, "uri": post.uri},
-                "root": vars(post.value.reply.root)
+                "root": vars(post.value.reply.root),
             }
         except AttributeError:
             # if this post is not a reply, it's both the root and parent
@@ -342,7 +348,10 @@ class BskyClient(object):
                 m = re.match(pattern_1, reply_uri) or re.match(pattern_2, reply_uri)
                 assert m, f"invalid reply_uri: {reply_uri}"
                 reply_repo, collection, reply_rkey = m.groups()
-                assert collection in ["app.bsky.feed.post","post"], f"invalid collection for reply: {collection}"
+                assert collection in [
+                    "app.bsky.feed.post",
+                    "post",
+                ], f"invalid collection for reply: {collection}"
                 reply = self.get_reply_refs(reply_repo, reply_rkey)
                 parent = None
             except (AssertionError, AttributeError):
@@ -368,16 +377,13 @@ class BskyClient(object):
 
         return response
 
-
     def get_record(self, collection, rkey, repo=None, **kwargs):
         params = {
             "repo": repo or self.did,
             "collection": collection,
             "rkey": rkey,
         }
-        return self.get(
-            endpoint="xrpc/com.atproto.repo.getRecord", params=params, **kwargs
-        )
+        return self.get(endpoint="xrpc/com.atproto.repo.getRecord", params=params, **kwargs)
 
     def get_post(self, rkey, **kwargs):
         return self.get_record("app.bsky.feed.post", rkey, **kwargs)

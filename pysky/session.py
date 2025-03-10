@@ -23,14 +23,12 @@ class Session(object):
             self.bsky_auth_username = ""
             self.bsky_auth_password = ""
 
-
     def get_did(self, client):
         try:
             return self.did
         except AttributeError:
             self.load_or_create(client)
             return self.did
-
 
     def load_or_create(self, client):
 
@@ -43,7 +41,6 @@ class Session(object):
             session = self.create(client)
 
         return session
-
 
     def create(self, client, method=SESSION_METHOD_CREATE):
 
@@ -74,7 +71,6 @@ class Session(object):
         self.serialize()
         return self.set_auth_header()
 
-
     def refresh(self, client):
         # i can't reproduce it, but once i saw a "maximum recursion depth exceeded"
         # exception here. i added this code to check for it.
@@ -84,13 +80,11 @@ class Session(object):
             )
         self.create(client, method=SESSION_METHOD_REFRESH)
 
-
     def serialize(self):
         bs = BskySession(**self.__dict__)
         # cause a new record to be saved rather than updating the previous one
         bs.id = None
         bs.save()
-
 
     def load_serialized(self):
         assert self.bsky_auth_username, "no bsky_auth_username when checking for cached session"
@@ -109,7 +103,7 @@ class Session(object):
     def set_auth_header(self):
         self.auth_header = {"Authorization": f"Bearer {self.accessJwt}"}
         return self.auth_header
-        
+
     def to_dict(self):
         return {
             "identifier": self.bsky_auth_username,
