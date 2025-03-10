@@ -15,6 +15,7 @@ from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
 from pysky.image import ensure_resized_image, get_aspect_ratio
 from pysky.helpers import get_post
+from pysky.exceptions import RefreshSessionRecursion, APIError, NotAuthenticated, ExcessiveIteration
 
 HOSTNAME_PUBLIC = "public.api.bsky.app"
 HOSTNAME_ENTRYWAY = "bsky.social"
@@ -36,25 +37,6 @@ VALID_COLLECTIONS = [
     "app.bsky.graph.follow",
     "chat.bsky.actor.declaration",
 ]
-
-
-class RefreshSessionRecursion(Exception):
-    pass
-
-
-class APIError(Exception):
-
-    def __init__(self, message, apilog):
-        self.message = message
-        self.apilog = apilog
-
-
-class NotAuthenticated(Exception):
-    pass
-
-
-class ExcessiveIteration(Exception):
-    pass
 
 
 class BskyClient(object):
