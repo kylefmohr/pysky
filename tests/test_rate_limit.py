@@ -10,8 +10,8 @@ def test_rate_limit(bsky):
     import pysky
     from pysky.ratelimit import get_budget_used
 
-    assert get_budget_used(bsky.get_did(), 1) == 0
-    assert get_budget_used(bsky.get_did(), 24) == 0
+    assert get_budget_used(bsky.did, 1) == 0
+    assert get_budget_used(bsky.did, 24) == 0
 
     bsky.set_artificial_write_ops_budget(1, 1)
     bsky.set_artificial_write_ops_budget(24, 1)
