@@ -2,10 +2,13 @@
 A Bluesky API library with database logging/caching and some quality of life application-level features:
 
 * Automatic session caching/refreshing
-* Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, ensuring that all objects are returned and that each object is only returned once
+* Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, across sessions, ensuring that all objects are returned and that each object is only returned once
 * Logging - metadata for all API calls and responses (including exceptions) is stored in the database
 * Rate limit monitoring
 * Image upload helpers: automatically submit aspect ratio and resize images, as needed, to stay under the size limit
+* Simplified post/reply ref interface
+
+The database backend allows these features to work seamlessly across different Python processes and simplifies the Bluesky integration responsibilities at the application level.
 
 These are features that I needed for other Bluesky projects, and I broke off the library code into this project. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
 
@@ -202,20 +205,29 @@ When using the `create_post` convenience method you can optionally pass a `clien
 ```python
 
 In [1]: bsky.create_post(text="test post",
-                         client_unique_key="original-post-57834357289")
+                         client_unique_key="original-post-12345")
 Out[1]:
 namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3ljxpzbltvg2q',
           cid='bafyreihfe5snabvajtw25pq2hqzpqy3csgd24nhc6zc7tv5lizgtc44rri',
           ...)
 
 In [2]: bsky.create_post(text="test reply",
-                         client_unique_key="original-post-57834357289-reply",
-                         reply_client_unique_key="original-post-57834357289")
+                         client_unique_key="original-post-12345-reply",
+                         reply_client_unique_key="original-post-12345")
 Out[2]:
 namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3ljxq2aouaa2p',
           cid='bafyreietfnkhwosxzi2cjqt2xmcn5y6xqajnzxavjknsjh42lassmqrc3q',
           ...)
 ```
+
+To reply to a post not created through this library with a client_unique_key, pass `reply_uri` instead:
+
+```python
+bsky.create_post(text="test reply",
+                 reply_uri="at://bsky.app/app.bsky.feed.post/3l6oveex3ii2l")
+```
+
+`https://bsky.app/profile/bsky.app/post/3l6oveex3ii2l` will also work as a value for `reply_uri`, though it's not guaranteed that other possible/future forms of a post URL will work.
 
 A reply can also be made by passing the reply data structure [documented here](https://docs.bsky.app/docs/advanced-guides/posts#replies) to `create_post` as the `reply` argument.
 
@@ -237,26 +249,6 @@ namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3ljxspvt
           cid='bafyreicdozcnnb4h7fxnfjohsfbz4bzrntiyx4srdvyqiykx6ixpttpmui',
           ...)
 ```
-
-Some sample code to build the reply dict:
-
-```python
-def get_reply_refs(bsky, repo, rkey):
-    post = bsky.get_post(rkey=rkey, repo=repo)
-    try:
-        # if this is a reply it has a post.value.reply attr with the root info
-        return {
-            "parent": {"cid": post.cid, "uri": post.uri},
-            "root": vars(post.value.reply.root)
-        }
-    except AttributeError:
-        # if this post is not a reply, it's both the root and parent
-        return {
-            "parent": {"cid": post.cid, "uri": post.uri},
-            "root": {"cid": post.cid, "uri": post.uri},
-        }
-```
-
 
 ## Responses
 
