@@ -23,6 +23,10 @@ class Session(object):
             self.bsky_auth_username = ""
             self.bsky_auth_password = ""
 
+    @staticmethod
+    def is_expired_token_response(r):
+        return r.status_code == 400 and r.json()["error"] == "ExpiredToken"
+
     def get_did(self, client):
         try:
             return self.did

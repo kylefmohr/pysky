@@ -55,7 +55,7 @@ class BskyClient(object):
         time_end = time()
         session_was_refreshed = False
 
-        if BskyClient.is_expired_token_response(r):
+        if Session.is_expired_token_response(r):
             self.session.refresh(self)
             args["headers"].update(self.auth_header)
             time_start = time()
@@ -232,10 +232,6 @@ class BskyClient(object):
 
         response_object.apilog = apilog
         return response_object
-
-    @staticmethod
-    def is_expired_token_response(r):
-        return r.status_code == 400 and r.json()["error"] == "ExpiredToken"
 
     def upload_image(
         self, image_data=None, image_path=None, mimetype=None, extension=None, allow_resize=True
