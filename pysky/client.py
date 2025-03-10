@@ -388,6 +388,21 @@ class BskyClient(object):
             hostname=hostname,
         )
 
+    def get_reply_refs(self, repo, rkey):
+        post = self.get_post(rkey=rkey, repo=repo)
+        try:
+            # if this is a reply it has a post.value.reply attr with the root info
+            return {
+                "parent": {"cid": post.cid, "uri": post.uri},
+                "root": vars(post.value.reply.root)
+            }
+        except AttributeError:
+            # if this post is not a reply, it's both the root and parent
+            return {
+                "parent": {"cid": post.cid, "uri": post.uri},
+                "root": {"cid": post.cid, "uri": post.uri},
+            }
+
     def create_record(self, collection, record):
         params = {
             "repo": self.get_did(),
@@ -408,10 +423,10 @@ class BskyClient(object):
         client_unique_key=None,
         reply_client_unique_key=None,
         reply=None,
+        reply_uri=None,
     ):
-
         if reply_client_unique_key and not reply:
-            # note - this lookup means you can't post a reply (by reply_client_unique_key) to a post created by a different account
+
             parent = (
                 BskyPost.select()
                 .join(APICallLog)
@@ -428,8 +443,19 @@ class BskyClient(object):
                 "root": {"uri": parent.uri, "cid": parent.cid},
                 "parent": {"uri": parent.uri, "cid": parent.cid},
             }
+        elif reply_uri and not reply:
+            try:
+                pattern_1 = "at://([^/]+)/([^/]+)/([a-z0-9]+)"
+                pattern_2 = "https://bsky.app/profile/([^/]+)/(post)/([a-z0-9]+)"
+                m = re.match(pattern_1, reply_uri) or re.match(pattern_2, reply_uri)
+                assert m, f"invalid reply_uri: {reply_uri}"
+                reply_repo, collection, reply_rkey = m.groups()
+                assert collection in ["app.bsky.feed.post","post"], f"invalid collection for reply: {collection}"
+                reply = self.get_reply_refs(reply_repo, reply_rkey)
+                parent = None
+            except (AssertionError, AttributeError):
+                raise Exception(f"invalid reply_uri: {reply_uri}")
         else:
-            # to do - can i look this up if reply dict is passed? (probably)
             parent = None
 
         if not post:
