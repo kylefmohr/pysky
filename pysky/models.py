@@ -43,6 +43,9 @@ class BskyUserProfile(BaseModel):
     associated_feedgens = IntegerField(null=True)
     associated_starterPacks = IntegerField(null=True, column_name="associated_starterPacks")
     associated_labeler = BooleanField(null=True)
+    viewer_muted = BooleanField(null=True)
+    viewer_blockedBy = BooleanField(null=True)
+    viewer_blocking = CharField(null=True)
     error = CharField(null=True)
 
     class Meta:

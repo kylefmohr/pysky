@@ -475,6 +475,11 @@ class BskyClient(object):
             for f in associated_fields:
                 setattr(user, f"associated_{f}", getattr(response.associated, f, None))
 
+            viewer_fields = "muted,blockedBy,blocking".split(",")
+            for f in viewer_fields:
+                if hasattr(response, "viewer"):
+                    setattr(user, f"viewer_{f}", getattr(response.viewer, f, None))
+
             user.labels = ",".join(l.val for l in getattr(response, "labels", []))
             user.save()
             return user
