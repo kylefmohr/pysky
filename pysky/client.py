@@ -39,9 +39,9 @@ VALID_COLLECTIONS = [
 
 class BskyClient(object):
 
-    def __init__(self, peewee_db=None, ignore_cached_session=False):
+    def __init__(self, peewee_db=None, **kwargs):
 
-        self.session = Session(ignore_cached_session)
+        self.session = Session(**kwargs)
         if peewee_db:
             assert isinstance(peewee_db, peewee.Database), "peewee_db argument must be a subclass of peewee.Database"
             for subclass in [BaseModel] + BaseModel.__subclasses__():

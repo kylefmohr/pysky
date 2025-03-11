@@ -12,13 +12,13 @@ SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
 
 class Session(object):
 
-    def __init__(self, ignore_cached_session=False):
+    def __init__(self, ignore_cached_session=False, bsky_auth_username=None, bsky_auth_password=None):
         self.auth_header = {}
         self.ignore_cached_session = ignore_cached_session
 
         try:
-            self.bsky_auth_username = os.environ["BSKY_AUTH_USERNAME"]
-            self.bsky_auth_password = os.environ["BSKY_AUTH_PASSWORD"]
+            self.bsky_auth_username = bsky_auth_username or os.environ["BSKY_AUTH_USERNAME"]
+            self.bsky_auth_password = bsky_auth_password or os.environ["BSKY_AUTH_PASSWORD"]
         except KeyError:
             self.bsky_auth_username = ""
             self.bsky_auth_password = ""
