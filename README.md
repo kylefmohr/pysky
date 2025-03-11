@@ -21,6 +21,8 @@ These are features that I needed for other Bluesky projects, and I broke off the
     * PostgreSQL configuration: If the official PostgreSQL environment variables are populated: `PGUSER`, `PGHOST`, `PGDATABASE`, `PGPASSWORD` (and optionally `PGPORT`) then a PostgreSQL database connection will be used.
     * SQLite configuration: If the PostgreSQL environment variables are not populated, the a SQLite database will be created with the filename specified in `BSKY_SQLITE_FILENAME`, otherwise ":memory:" will be used, creating a non-persisted in-memory database.
 
+Alternatively, you can instantiate a Peewee database object yourself and pass it to the BskyClient constructor as `peewee_db` to override any database enivornment variables.
+
 3. Create database tables: run `./pysky/bin/create_tables.py`.
 
 4. (Optional) Set authentication environment variables for username and app password: `BSKY_AUTH_USERNAME`, `BSKY_AUTH_PASSWORD`. If only public endpoints are going to be accessed, these aren't needed.

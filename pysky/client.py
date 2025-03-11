@@ -4,11 +4,13 @@ import inspect
 import mimetypes
 from time import time
 from types import SimpleNamespace
+
+import peewee
 import requests
 
 from pysky.logging import log
 from pysky.session import Session
-from pysky.models import BskySession, BskyUserProfile, APICallLog, BskyPost
+from pysky.models import BaseModel, BskySession, BskyUserProfile, APICallLog, BskyPost
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
 from pysky.image import ensure_resized_image, get_aspect_ratio
@@ -37,8 +39,13 @@ VALID_COLLECTIONS = [
 
 class BskyClient(object):
 
-    def __init__(self, ignore_cached_session=False):
+    def __init__(self, peewee_db=None, ignore_cached_session=False):
+
         self.session = Session(ignore_cached_session)
+        if peewee_db:
+            assert isinstance(peewee_db, peewee.Database), "peewee_db argument must be a subclass of peewee.Database"
+            for subclass in [BaseModel] + BaseModel.__subclasses__():
+                subclass._meta.set_database(peewee_db)
 
     @property
     def auth_header(self):
