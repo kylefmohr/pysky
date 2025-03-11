@@ -14,7 +14,7 @@ These are features that I needed for other Bluesky projects, and I broke off the
 
 ## Installation / Setup
 
-1. Clone the repo, add it to PYTHONPATH, pip install -r requirements.txt.
+1. Clone the repo, add it to PYTHONPATH, pip install -r requirements.txt
 
 2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
 
@@ -22,11 +22,13 @@ These are features that I needed for other Bluesky projects, and I broke off the
     * SQLite: If those aren't set, the SQLite database `$BSKY_SQLITE_FILENAME` will be used. If that isn't set then ":memory:" will be used, an ephemeral in-memory database.
     * Alternatively, you can instantiate a Peewee database object yourself and pass it to the BskyClient constructor as `peewee_db` to override any database environment variables.
 
-3. Create database tables: run `./pysky/bin/create_tables.py`.
+3. Create database tables: run `./pysky/bin/create_tables.py`
 
 4. (Optional) Set authentication environment variables for username and app password: `BSKY_AUTH_USERNAME`, `BSKY_AUTH_PASSWORD`. If only public endpoints are going to be accessed, these aren't needed. Credentials can also be passed to the `BskyClient` constructor as `bsky_auth_username` and `bsky_auth_password`.
 
-## Basic Usage
+## Usage
+
+### Get a User Profile
 
 ```python
 In [1]: from pysky import BskyClient
