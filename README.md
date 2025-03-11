@@ -14,7 +14,6 @@ These are features that I needed for other Bluesky projects, and I broke off the
 
 ## Installation / Setup
 
-no:
 1. Clone the repo, add it to PYTHONPATH, and install the packages in requirements.txt.
 
 2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
