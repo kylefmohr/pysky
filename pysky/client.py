@@ -21,10 +21,14 @@ from pysky.constants import (
     HOSTNAME_PUBLIC,
     HOSTNAME_ENTRYWAY,
     HOSTNAME_CHAT,
+    HOSTNAME_VIDEO,
     AUTH_METHOD_PASSWORD,
     AUTH_METHOD_TOKEN,
 )
 
+SERVICE_AUTH_ENDPOINTS = {
+    "xrpc/app.bsky.video.getUploadLimits": (HOSTNAME_VIDEO, f"did:web:{HOSTNAME_VIDEO}"),
+}
 
 VALID_COLLECTIONS = [
     "app.bsky.actor.profile",
@@ -43,7 +47,9 @@ class BskyClient(object):
 
         self.session = Session(**kwargs)
         if peewee_db:
-            assert isinstance(peewee_db, peewee.Database), "peewee_db argument must be a subclass of peewee.Database"
+            assert isinstance(
+                peewee_db, peewee.Database
+            ), "peewee_db argument must be a subclass of peewee.Database"
             for subclass in [BaseModel] + BaseModel.__subclasses__():
                 subclass._meta.set_database(peewee_db)
 
@@ -148,8 +154,18 @@ class BskyClient(object):
         # additional **kwargs passed through to here will get added to params, for convenience
         params.update(kwargs)
 
+        service_auth_token = (
+            self.get_service_auth(service_endpoint=endpoint)
+            if endpoint in SERVICE_AUTH_ENDPOINTS
+            else None
+        )
+
         if auth_method == AUTH_METHOD_TOKEN and use_refresh_token:
             args["headers"].update({"Authorization": f"Bearer {self.session.refreshJwt}"})
+        elif service_auth_token or kwargs.get("service_token"):
+            args["headers"].update(
+                {"Authorization": f"Bearer {service_auth_token or kwargs['service_token']}"}
+            )
         elif auth_method == AUTH_METHOD_PASSWORD:
             args["json"] = self.session.to_dict()
 
@@ -483,6 +499,22 @@ class BskyClient(object):
             user.labels = ",".join(l.val for l in getattr(response, "labels", []))
             user.save()
             return user
+
+    def get_service_auth(self, lxm=None, aud=None, exp=None, service_endpoint=None):
+
+        if service_endpoint:
+            _, aud = SERVICE_AUTH_ENDPOINTS[service_endpoint]
+            lxm = service_endpoint.split("/")[-1]
+
+        endpoint = "xrpc/com.atproto.server.getServiceAuth"
+        response = self.get(
+            hostname=HOSTNAME_ENTRYWAY, endpoint=endpoint, lxm=lxm, aud=aud, exp=exp
+        )
+        return response.token
+
+    def get_upload_limits(self):
+        endpoint = "xrpc/app.bsky.video.getUploadLimits"
+        return self.get(hostname=HOSTNAME_VIDEO, endpoint=endpoint)
 
 
 class BskyClientTestMode(BskyClient):
