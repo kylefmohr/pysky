@@ -14,7 +14,8 @@ These are features that I needed for other Bluesky projects, and I broke off the
 
 ## Installation / Setup
 
-1. Clone the repo, add it to PYTHONPATH, and install the few required dependencies: [requests](https://pypi.org/project/requests/), [peewee](https://pypi.org/project/peewee/), [psycopg2-binary](https://pypi.org/project/psycopg2-binary/), [pillow](https://pypi.org/project/pillow/). The latter two aren't required if not using PostgreSQL or the image editing features, respectively.
+no:
+1. Clone the repo, add it to PYTHONPATH, and install the packages in requirements.txt.
 
 2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
 
@@ -25,7 +26,7 @@ Alternatively, you can instantiate a Peewee database object yourself and pass it
 
 3. Create database tables: run `./pysky/bin/create_tables.py`.
 
-4. (Optional) Set authentication environment variables for username and app password: `BSKY_AUTH_USERNAME`, `BSKY_AUTH_PASSWORD`. If only public endpoints are going to be accessed, these aren't needed.
+4. (Optional) Set authentication environment variables for username and app password: `BSKY_AUTH_USERNAME`, `BSKY_AUTH_PASSWORD`. If only public endpoints are going to be accessed, these aren't needed. Credentials can also be passed to the `BskyClient` constructor as `bsky_auth_username` and `bsky_auth_password`.
 
 ## Basic Usage
 
