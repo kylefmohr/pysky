@@ -1,13 +1,19 @@
 from datetime import datetime, timezone
 from itertools import zip_longest
 
+import bs4
+import markdown
 
-def get_post(text, blob_uploads=None, alt_texts=None, facets=None, reply=None):
-    post = {
-        "$type": "app.bsky.feed.post",
-        "text": text,
-        "createdAt": datetime.now(timezone.utc).isoformat(),
-    }
+def get_post(text, blob_uploads=None, alt_texts=None, facets=None, reply=None, markdown_text=None):
+
+    if markdown_text:
+        post = get_post_from_markdown(markdown_text)
+    else:
+        post = {
+            "$type": "app.bsky.feed.post",
+            "text": text,
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+        }
 
     if facets:
         post["facets"] = facets
@@ -51,7 +57,7 @@ def get_image(blob_upload, alt_text=None):
     return image
 
 
-def get_facet(text, link_text, link_uri):
+def get_facet_from_substring(text, link_text, link_uri):
     return {
         "index": {
             "byteStart": text.find(link_text),
@@ -59,3 +65,38 @@ def get_facet(text, link_text, link_uri):
         },
         "features": [{"$type": "app.bsky.richtext.facet#link", "uri": link_uri}],
     }
+
+
+def get_post_from_markdown(markdown_text):
+
+    soup = bs4.BeautifulSoup(markdown.markdown(markdown_text), 'html.parser')
+
+    output_str = b""
+    facets = []
+
+    for child in soup.p.contents:
+        if isinstance(child, bs4.element.NavigableString):
+            output_str += child.text.encode("utf-8")
+        elif isinstance(child, bs4.element.Tag):
+            assert child.name == "a", "invalid markdown code"
+            href = child.attrs['href']
+            text = child.text.encode("utf-8")
+            facets.append({
+                "index": {
+                    "byteStart": len(output_str),
+                    "byteEnd": len(output_str) + len(text),
+                },
+                "features": [{"$type": "app.bsky.richtext.facet#link", "uri": href}],
+            })
+            output_str += text
+
+    post = {
+        "$type": "app.bsky.feed.post",
+        "text": output_str.decode("utf-8"),
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+    }
+
+    if facets:
+        post["facets"] = facets
+
+    return post
