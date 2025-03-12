@@ -9,8 +9,8 @@ A Bluesky API library with database logging/caching and some quality of life app
     * Automatically resize images as needed to stay under the upload size limit
     * Automatically submit aspect ratio with image
 * Simplified post/reply interface:
-    * Reply to posts without providing post refs
-    * Specify links in post text as markdown without providing facets
+    * Reply to posts without needing to provide post refs
+    * Specify links in post text as Markdown without needing to provide facets
 
 I created these features for my own projects with the goal of simplifying the Bluesky integration responsibilities at the application level and moved them into this project. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
 
@@ -49,6 +49,14 @@ I created these features for my own projects with the goal of simplifying the Bl
 ```
 
 ### Create a Post
+
+You can work with either higher level helper methods or the lower-level `bsky.get()` and `bsky.post()`. These two calls are equivalent:
+
+```python
+>>> response = bsky.create_post("Hello Bluesky")
+>>> response.uri
+'at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3lk5iaxmqex26'
+```
 
 ```python
 >>> from datetime import datetime, timezone
