@@ -325,8 +325,9 @@ class BskyClient(object):
 
     def create_post(
         self,
-        post=None,
         text=None,
+        markdown_text=None,
+        post=None,
         blob_uploads=None,
         alt_texts=None,
         facets=None,
@@ -372,7 +373,7 @@ class BskyClient(object):
             parent = None
 
         if not post:
-            post = get_post(text, blob_uploads or [], alt_texts or [], facets, reply)
+            post = get_post(text=text, markdown_text=markdown_text, blob_uploads=(blob_uploads or []), alt_texts=(alt_texts or []), facets=facets, reply=reply)
 
         response = self.create_record("app.bsky.feed.post", post)
 
