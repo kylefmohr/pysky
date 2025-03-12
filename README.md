@@ -1,16 +1,18 @@
 # pysky
 A Bluesky API library with database logging/caching and some quality of life application-level features:
 
-* Automatic session caching/refreshing
+* Automatic session caching/refreshing that works seamlessly across Python sessions
 * Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, across sessions, ensuring that all objects are returned and that each object is only returned once
 * Logging - metadata for all API calls and responses (including exceptions) is stored in the database
 * Rate limit monitoring
-* Image upload helpers: automatically submit aspect ratio and resize images, as needed, to stay under the size limit
-* Simplified post/reply ref interface
+* Simplified image upload:
+    * Automatically resize images as needed to stay under the upload size limit
+    * Automatically submit aspect ratio with image
+* Simplified post/reply interface:
+    * Reply to posts without providing post refs
+    * Specify links in post text as markdown without providing facets
 
-The database backend allows these features to work seamlessly across different Python processes and simplifies the Bluesky integration responsibilities at the application level.
-
-These are features that I needed for other Bluesky projects, and I broke off the library code into this project. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
+I created these features for my own projects with the goal of simplifying the Bluesky integration responsibilities at the application level and moved them into this project. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
 
 ## Installation / Setup
 
@@ -31,18 +33,39 @@ These are features that I needed for other Bluesky projects, and I broke off the
 ### Get a User Profile
 
 ```python
-In [1]: from pysky import BskyClient
+>>> from pysky import BskyClient
+>>> bsky = BskyClient()
+>>> profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
+...                    params={"actor": "did:plc:zcmchxw2gxlbincrchpdjopq"})
+>>> profile.handle
+'craigweekend.bsky.social'
 
-In [2]: bsky = BskyClient()
+# the params dict is what's passed through to the API,
+# but its elements can also be passed to get() as kwargs:
+>>> profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
+...                    actor="craigweekend.bsky.social")
+>>> profile.displayName
+"It's The Weekend 😌"
+```
 
-In [3]: profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
-                           params={"actor": "did:plc:zcmchxw2gxlbincrchpdjopq"})
+### Create a Post
 
-In [4]: profile.handle
-Out[4]: 'craigweekend.bsky.social'
-
-In [5]: profile.displayName
-Out[5]: "It's The Weekend 😌"
+```python
+>>> from datetime import datetime, timezone
+>>> params = {
+...     "repo": bsky.did,
+...     "collection": "app.bsky.feed.post",
+...     "record": {
+...         "$type": "app.bsky.feed.post",
+...         "text": "Hello Bluesky",
+...         "createdAt": datetime.now(timezone.utc).isoformat(),
+...     }
+... }
+...
+>>> response = bsky.post(hostname="bsky.social",
+...                      endpoint="xrpc/com.atproto.repo.createRecord",
+...                      params=params)
+...
 ```
 
 Most interaction with this library happens through just a few different methods:
