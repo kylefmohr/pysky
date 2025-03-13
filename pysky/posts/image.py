@@ -49,6 +49,8 @@ class Image:
         except Exception as e:
             log.warning(f"error finding image aspect ratio")
 
+        return self.upload_response
+
     def as_dict(self):
 
         image = {

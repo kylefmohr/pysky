@@ -16,10 +16,14 @@ class Post:
         self.facets = []
         self.videos = []
         self.images = []
+        self.external = None
         self.reply = reply
         self.client_unique_key = client_unique_key
         if markdown_text:
             self.process_markdown_text(markdown_text)
+
+    def add_external(self, external):
+        self.external = external
 
     def add_facet(self, facet):
         self.facets.append(facet)
@@ -54,10 +58,16 @@ class Post:
         if self.facets:
             post["facets"] = [f.as_dict() for f in self.facets]
 
+        if self.external:
+            assert not self.videos and not self.images
+            post["embed"] = self.external.as_dict()
+
         if self.videos:
+            assert not self.external and not self.images
             post["embed"] = self.videos[0].as_dict()
 
         if self.images:
+            assert not self.videos and not self.external
             post["embed"] = {
                 "$type": "app.bsky.embed.images",
                 "images": [image.as_dict() for image in self.images],
