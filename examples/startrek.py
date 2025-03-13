@@ -1,4 +1,4 @@
-import os
+from glob import glob
 from datetime import datetime
 import psycopg2
 
@@ -28,10 +28,7 @@ markdown_text = f"""
 """.strip()
 
 # the result of this is 8 image filenames that match the pattern
-images = sorted(f"images/{f}" for f in os.listdir("images"))
-images = [
-    im for im in images if f"{row.show_abbrev}-season-{row.season}-episode-{row.episode}-" in im
-]
+images = sorted(glob(f"images/*{row.show_abbrev}-season-{row.season}-episode-{row.episode}-*"))
 
 # define alt text for the images
 alt_text = [
