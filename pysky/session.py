@@ -38,8 +38,7 @@ class Session(object):
         try:
             return self.pds_service_endpoint
         except AttributeError:
-            self.load_or_create(client)
-            return self.pds_service_endpoint
+            return None
 
     def load_or_create(self, client):
 

@@ -77,7 +77,7 @@ class BskyClient(object):
 
     @property
     def pds_service_hostname(self):
-        return self.session.get_pds_service_endpoint(self).split("/")[-1]
+        return self.pds_service_endpoint.split("/")[-1] if self.pds_service_endpoint else None
 
     def call_with_session_refresh(self, method, uri, args):
 
