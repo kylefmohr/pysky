@@ -2,8 +2,9 @@ import re
 import json
 import inspect
 import mimetypes
-from time import time
+from time import time, sleep
 from types import SimpleNamespace
+from itertools import count
 
 import peewee
 import requests
@@ -14,6 +15,7 @@ from pysky.models import BaseModel, BskySession, BskyUserProfile, APICallLog, Bs
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
 from pysky.image import ensure_resized_image, get_aspect_ratio
+from pysky.video import get_aspect_ratio as get_video_aspect_ratio
 from pysky.helpers import get_post
 from pysky.exceptions import RefreshSessionRecursion, APIError, NotAuthenticated, ExcessiveIteration
 from pysky.decorators import process_cursor, ZERO_CURSOR
@@ -26,8 +28,16 @@ from pysky.constants import (
     AUTH_METHOD_TOKEN,
 )
 
+
+# map each endpoint that requires service auth to the lxm and a callable
+# that returns the aud required to get a service auth token
 SERVICE_AUTH_ENDPOINTS = {
-    "xrpc/app.bsky.video.getUploadLimits": (HOSTNAME_VIDEO, f"did:web:{HOSTNAME_VIDEO}"),
+    "xrpc/app.bsky.video.getUploadLimits": (
+        "app.bsky.video.getUploadLimits", lambda bsky: f"did:web:{HOSTNAME_VIDEO}"
+    ),
+    "xrpc/app.bsky.video.uploadVideo": (
+        "com.atproto.repo.uploadBlob", lambda bsky: f"did:web:{bsky.pds_service_hostname}"
+    ),
 }
 
 VALID_COLLECTIONS = [
@@ -60,6 +70,14 @@ class BskyClient(object):
     @property
     def did(self):
         return self.session.get_did(self)
+
+    @property
+    def pds_service_endpoint(self):
+        return self.session.get_pds_service_endpoint(self)
+
+    @property
+    def pds_service_hostname(self):
+        return self.session.get_pds_service_endpoint(self).split("/")[-1]
 
     def call_with_session_refresh(self, method, uri, args):
 
@@ -112,6 +130,16 @@ class BskyClient(object):
         args["headers"] = headers or {}
 
         request_requires_auth = hostname != HOSTNAME_PUBLIC
+
+        # use the real PDS endpoint instead of the entryway, if possible
+        if hostname == HOSTNAME_ENTRYWAY:
+            try:
+                hostname = self.pds_service_hostname or HOSTNAME_ENTRYWAY
+                apilog.hostname = hostname
+                log.info(f"updating hostname to {hostname}")
+            except AttributeError as e:
+                log.info(f"error updating hostname: {e}")
+                pass
 
         if request_requires_auth:
 
@@ -173,6 +201,8 @@ class BskyClient(object):
             args["params"] = params
         elif data and method == requests.post:
             args["data"] = data
+            if params:
+                args["params"] = params
         elif params and method == requests.post:
             if "json" in args:
                 args["json"].update(params)
@@ -266,7 +296,7 @@ class BskyClient(object):
 
         if not mimetype:
             raise Exception(
-                "mimetype must be provided, or else an image_path or extension from which the mimetype can be guessed."
+                "mimetype must be provided, or else an image_path or extension from which the mimetype can be guessed"
             )
 
         if image_path and not image_data:
@@ -284,7 +314,7 @@ class BskyClient(object):
         uploaded_blob = self.upload_blob(image_data, mimetype)
 
         try:
-            uploaded_blob.aspect_ratio = get_aspect_ratio(image_data)
+            uploaded_blob.blob.aspect_ratio = get_aspect_ratio(image_data)
         except Exception as e:
             pass
 
@@ -335,6 +365,7 @@ class BskyClient(object):
         reply_client_unique_key=None,
         reply=None,
         reply_uri=None,
+        video_blob_upload=None,
     ):
         if reply_client_unique_key and not reply:
 
@@ -373,11 +404,12 @@ class BskyClient(object):
             parent = None
 
         if not post:
-            post = get_post(text=text, markdown_text=markdown_text, blob_uploads=(blob_uploads or []), alt_texts=(alt_texts or []), facets=facets, reply=reply)
+            post = get_post(text=text, markdown_text=markdown_text, blob_uploads=(blob_uploads or []), alt_texts=(alt_texts or []), facets=facets, reply=reply, video_blob_upload=video_blob_upload)
 
         response = self.create_record("app.bsky.feed.post", post)
 
         if response.apilog.http_status_code == 200:
+            # to do, add uri of what replying to?
             create_kwargs = {
                 "apilog": response.apilog,
                 "cid": response.cid,
@@ -504,8 +536,8 @@ class BskyClient(object):
     def get_service_auth(self, lxm=None, aud=None, exp=None, service_endpoint=None):
 
         if service_endpoint:
-            _, aud = SERVICE_AUTH_ENDPOINTS[service_endpoint]
-            lxm = service_endpoint.split("/")[-1]
+            lxm, aud_func = SERVICE_AUTH_ENDPOINTS[service_endpoint]
+            aud = aud_func(self)
 
         endpoint = "xrpc/com.atproto.server.getServiceAuth"
         response = self.get(
@@ -516,6 +548,65 @@ class BskyClient(object):
     def get_upload_limits(self):
         endpoint = "xrpc/app.bsky.video.getUploadLimits"
         return self.get(hostname=HOSTNAME_VIDEO, endpoint=endpoint)
+
+
+    def upload_video(self, video_path, mimetype=None, extension=None, block_until_processed=True):
+
+        if video_path and not mimetype:
+            mimetype, _ = mimetypes.guess_file_type(video_path)
+        elif extension and not mimetype:
+            mimetype, _ = mimetypes.guess_file_type(f"video.{extension}")
+
+        if not mimetype:
+            raise Exception(
+                "mimetype must be provided, or else a video_path or extension from which the mimetype can be guessed"
+            )
+
+        video_data = open(video_path, "rb").read()
+
+        params = {"did": self.did, "name": video_path.split("/")[-1]}
+
+        uploaded_blob = self.post(
+            params=params,
+            data=video_data,
+            endpoint="xrpc/app.bsky.video.uploadVideo",
+            headers={"Content-Type": mimetype},
+            hostname=HOSTNAME_VIDEO,
+        )
+
+        processed_blob = None
+
+        for n in count():
+            r = self.get_video_upload_job_status(uploaded_blob.jobId)
+
+            if r.jobStatus.state == "JOB_STATE_COMPLETED":
+                processed_blob = r.jobStatus.blob
+                break
+            elif r.jobStatus.state == "JOB_STATE_FAILED":
+                raise Exception(f"error state in video processing: {r.jobStatus.state} (jobId {uploaded_blob.jobId})")
+            elif n > 500:
+                raise ExcessiveIteration(f"waited too long for video upload processing (jobId {uploaded_blob.jobId})")
+
+            sleep(2)
+
+        # only relevant after the processing is finished
+        try:
+            if processed_blob:
+                processed_blob.aspect_ratio = get_video_aspect_ratio(video_path)
+        except Exception as e:
+            log.error(f"can't get aspect ratio for {video_path}: {e}")
+
+        if processed_blob:
+            # push the blob struct one level down for
+            # consistency with the image upload response
+            return SimpleNamespace({"blob": processed_blob})
+        else:
+            return uploaded_blob
+
+
+    def get_video_upload_job_status(self, jobId):
+        endpoint = "xrpc/app.bsky.video.getJobStatus"
+        return self.get(endpoint=endpoint, hostname=HOSTNAME_VIDEO, jobId=jobId)
 
 
 class BskyClientTestMode(BskyClient):
