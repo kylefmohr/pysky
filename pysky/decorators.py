@@ -1,4 +1,5 @@
 import inspect
+from itertools import count
 
 from pysky.models import APICallLog
 from pysky.exceptions import ExcessiveIteration
@@ -81,16 +82,11 @@ def call_with_pagination(client, func, **kwargs):
 
     assert "cursor" in kwargs, "called call_with_pagination without a cursor argument"
     responses = []
-    iteration_count = 0
-    ITERATION_MAX = 1000
 
-    while True:
+    for n in count():
 
-        iteration_count += 1
-        if iteration_count > ITERATION_MAX:
-            raise ExcessiveIteration(
-                f"tried to paginate through too many pages ({ITERATION_MAX})"
-            )
+        if n > 500:
+            raise ExcessiveIteration(f"excessive pagination: {n} pages")
 
         response = func(client, **kwargs)
         responses.append(response)
