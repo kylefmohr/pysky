@@ -53,7 +53,7 @@ VALID_COLLECTIONS = [
 ]
 
 
-class BskyClient(object):
+class BskyClient:
 
     def __init__(self, peewee_db=None, **kwargs):
 

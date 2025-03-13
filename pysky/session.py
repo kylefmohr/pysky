@@ -10,7 +10,7 @@ from pysky.constants import HOSTNAME_ENTRYWAY, AUTH_METHOD_PASSWORD
 SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
 
 
-class Session(object):
+class Session:
 
     def __init__(
         self, ignore_cached_session=False, bsky_auth_username=None, bsky_auth_password=None
