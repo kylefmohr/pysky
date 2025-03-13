@@ -34,6 +34,13 @@ class Session(object):
             self.load_or_create(client)
             return self.did
 
+    def get_pds_service_endpoint(self, client):
+        try:
+            return self.pds_service_endpoint
+        except AttributeError:
+            self.load_or_create(client)
+            return self.pds_service_endpoint
+
     def load_or_create(self, client):
 
         session = None
@@ -72,6 +79,7 @@ class Session(object):
         self.did = session.did
         self.create_method = method
         self.created_at = datetime.now().isoformat()
+        self.pds_service_endpoint = [s for s in session.didDoc.service if s.id == "#atproto_pds"][0].serviceEndpoint
         self.serialize()
         return self.set_auth_header()
 

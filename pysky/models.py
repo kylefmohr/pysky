@@ -24,6 +24,7 @@ class BskySession(BaseModel):
     created_at = DateTimeField()
     create_method = IntegerField()
     exception = CharField(null=True)
+    pds_service_endpoint = CharField()
 
     class Meta:
         table_name = "bsky_session"
