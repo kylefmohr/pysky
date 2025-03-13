@@ -2,6 +2,7 @@ import re
 
 from pysky.models import BskyPost, APICallLog
 
+
 class Reply:
 
     def __init__(self, original_post_repo, original_post_rkey):
@@ -27,7 +28,6 @@ class Reply:
                 "root": {"cid": post.cid, "uri": post.uri},
             }
 
-
     @staticmethod
     def from_uri(uri):
         pattern_1 = "at://([^/]+)/([^/]+)/([a-z0-9]+)"
@@ -40,7 +40,6 @@ class Reply:
             "post",
         ], f"invalid collection for reply: {collection}"
         return Reply(reply_repo, reply_rkey)
-
 
     @staticmethod
     def from_client_unique_key(did, client_unique_key):

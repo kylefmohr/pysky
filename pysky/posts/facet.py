@@ -16,4 +16,6 @@ class Facet:
 
     @staticmethod
     def build_from_link(text, link_text, uri):
-        return Facet(text.find(link_text), text.find(link_text) + len(link_text.encode('utf-8'), uri))
+        return Facet(
+            text.find(link_text), text.find(link_text) + len(link_text.encode("utf-8"), uri)
+        )

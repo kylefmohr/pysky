@@ -8,6 +8,7 @@ from pysky.logging import log
 from pysky.video import get_aspect_ratio
 from pysky.exceptions import ExcessiveIteration
 
+
 class Video:
 
     def __init__(self, filename):
@@ -72,10 +73,11 @@ class Video:
         else:
             self.upload_response = uploaded_blob
 
-
     def as_dict(self):
 
-        assert self.upload_response and hasattr(self.upload_response, "blob"), f"video {self.filename} hasn't been successfully uploaded yet"
+        assert self.upload_response and hasattr(
+            self.upload_response, "blob"
+        ), f"video {self.filename} hasn't been successfully uploaded yet"
         # assert aspect_ratio?
 
         video = {

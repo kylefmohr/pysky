@@ -60,13 +60,10 @@ class Post:
         if self.images:
             post["embed"] = {
                 "$type": "app.bsky.embed.images",
-                "images": [
-                    image.as_dict() for image in self.images
-                ],
+                "images": [image.as_dict() for image in self.images],
             }
 
         return post
-
 
     def process_markdown_text(self, markdown_text):
 
@@ -81,12 +78,11 @@ class Post:
                 assert child.name == "a", "invalid markdown code"
                 href = child.attrs["href"]
                 child_text = child.text.encode("utf-8")
-                facet = Facet(len(text), len(text)+len(child_text), href)
+                facet = Facet(len(text), len(text) + len(child_text), href)
                 self.add_facet(facet)
                 text += child_text
 
         self.text = text.decode("utf-8")
-
 
     def save_to_database(self, response):
         create_kwargs = {
