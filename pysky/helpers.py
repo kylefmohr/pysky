@@ -4,7 +4,16 @@ from itertools import zip_longest
 import bs4
 import markdown
 
-def get_post(text, blob_uploads=None, alt_texts=None, facets=None, reply=None, markdown_text=None, video_blob_upload=None):
+
+def get_post(
+    text,
+    blob_uploads=None,
+    alt_texts=None,
+    facets=None,
+    reply=None,
+    markdown_text=None,
+    video_blob_upload=None,
+):
 
     if markdown_text:
         post = get_post_from_markdown(markdown_text)
@@ -39,13 +48,12 @@ def get_video_embed(blob_upload):
         "aspectRatio": {"width": aspect_ratio[0], "height": aspect_ratio[1]},
         "video": {
             "$type": "blob",
-            "ref": {
-                "$link": getattr(blob_upload.blob.ref, "$link")
-            },
+            "ref": {"$link": getattr(blob_upload.blob.ref, "$link")},
             "mimeType": blob_upload.blob.mimeType,
             "size": blob_upload.blob.size,
         },
     }
+
 
 def get_image_embed(blob_uploads, alt_texts):
     return {
@@ -89,7 +97,7 @@ def get_facet_from_substring(text, link_text, link_uri):
 
 def get_post_from_markdown(markdown_text):
 
-    soup = bs4.BeautifulSoup(markdown.markdown(markdown_text), 'html.parser')
+    soup = bs4.BeautifulSoup(markdown.markdown(markdown_text), "html.parser")
 
     output_str = b""
     facets = []
@@ -99,15 +107,17 @@ def get_post_from_markdown(markdown_text):
             output_str += child.text.encode("utf-8")
         elif isinstance(child, bs4.element.Tag):
             assert child.name == "a", "invalid markdown code"
-            href = child.attrs['href']
+            href = child.attrs["href"]
             text = child.text.encode("utf-8")
-            facets.append({
-                "index": {
-                    "byteStart": len(output_str),
-                    "byteEnd": len(output_str) + len(text),
-                },
-                "features": [{"$type": "app.bsky.richtext.facet#link", "uri": href}],
-            })
+            facets.append(
+                {
+                    "index": {
+                        "byteStart": len(output_str),
+                        "byteEnd": len(output_str) + len(text),
+                    },
+                    "features": [{"$type": "app.bsky.richtext.facet#link", "uri": href}],
+                }
+            )
             output_str += text
 
     post = {
