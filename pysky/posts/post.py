@@ -6,12 +6,13 @@ import markdown
 from pysky.models import BskyPost
 from pysky.posts.utils import uploadable, uploaded
 from pysky.posts.facet import Facet
+from pysky.posts.reply import Reply
 
 
 class Post:
 
     # redundant to have both text and markdown_text because they can both be parsed as markdown?
-    def __init__(self, text=None, markdown_text=None, reply=None, client_unique_key=None):
+    def __init__(self, text=None, markdown_text=None, reply=None, client_unique_key=None, reply_client_unique_key=None):
         self.text = text or ""
         self.facets = []
         self.videos = []
@@ -19,6 +20,7 @@ class Post:
         self.external = None
         self.reply = reply
         self.client_unique_key = client_unique_key
+        self.reply_client_unique_key = reply_client_unique_key
         if markdown_text:
             self.process_markdown_text(markdown_text)
 
@@ -36,6 +38,10 @@ class Post:
         assert uploadable(image), "image must be an Image object"
         self.images.append(image)
 
+    def add_images(self, images):
+        for img in images:
+            self.add_image(img)
+
     def upload_files(self, bsky):
         for uploadable_file in self.images + self.videos:
             if not uploaded(uploadable_file):
@@ -46,6 +52,9 @@ class Post:
         if not all(uploaded(obj) for obj in self.images + self.videos):
             raise Exception("must call Post.upload_files before posting")
 
+        if not self.reply and self.reply_client_unique_key:
+            self.reply = Reply.from_client_unique_key(self.reply_client_unique_key)
+
         post = {
             "$type": "app.bsky.feed.post",
             "text": self.text or "",
@@ -53,7 +62,7 @@ class Post:
         }
 
         if self.reply:
-            post["reply"] = reply.as_dict()
+            post["reply"] = self.reply.as_dict()
 
         if self.facets:
             post["facets"] = [f.as_dict() for f in self.facets]

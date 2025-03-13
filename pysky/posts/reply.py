@@ -1,7 +1,7 @@
 import re
 
 from pysky.models import BskyPost, APICallLog
-
+from pysky.client import BskyClient
 
 class Reply:
 
@@ -13,7 +13,8 @@ class Reply:
     def uri(self):
         return "at://{self.original_post_repo}/app.bsky.feed.post/{self.original_post_rkey}"
 
-    def as_dict(self, bsky):
+    def as_dict(self):
+        bsky = BskyClient()
         post = bsky.get_post(rkey=self.original_post_rkey, repo=self.original_post_repo)
         try:
             # if this is a reply it has a post.value.reply attr with the root info
@@ -42,15 +43,16 @@ class Reply:
         return Reply(reply_repo, reply_rkey)
 
     @staticmethod
-    def from_client_unique_key(did, client_unique_key):
+    def from_client_unique_key(client_unique_key, did=None):
         parent = (
             BskyPost.select(BskyPost.uri)
             .join(APICallLog)
             .where(
                 BskyPost.client_unique_key == client_unique_key,
-                APICallLog.request_did == did,
+                #APICallLog.request_did == did,
             )
             .first()
         )
         assert parent, "can't create a reply to an invalid parent"
+        # this approach means BskyPost.cid is unnecessary
         return Reply.from_uri(parent.uri)
