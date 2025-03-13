@@ -1,63 +1,66 @@
 import os
-import sys
-import time
 from datetime import datetime
-from slugify import slugify
 import psycopg2
 
 from pysky import BskyClient
+from pysky.posts import Post, Image
 
 bsky = BskyClient()
 
+# query the database for the content fields to be used in the posts
 con = psycopg2.connect(cursor_factory=psycopg2.extras.NamedTupleCursor)
 cursor = con.cursor()
 cursor.execute(
     "select * from trek_episodes where month=%s and day=%s limit 1",
     (datetime.now().month, datetime.now().day),
 )
-
 row = cursor.fetchone()
 
 if not row:
-    sys.stderr.write("No episodes aired on this day")
+    print("No episodes aired on this day")
     exit(0)
 
-post_text_markdown = f"""
+# due to the markdown format, the episode title will be a link
+markdown_text = f"""
 {row.date.strftime("%B %d, %Y").replace(" 0", " ")}
 ["{row.title}"]({row.link})
 {row.show} - Season {row.season}, Episode {row.episode}
 """.strip()
 
+# the result of this is 8 image filenames that match the pattern
 images = sorted(f"images/{f}" for f in os.listdir("images"))
 images = [
-    im for im in images if f"{slugify(row.show)}-season-{row.season}-episode-{row.episode}-" in im
+    im for im in images if f"{row.show_abbrev}-season-{row.season}-episode-{row.episode}-" in im
 ]
 
-alt_texts = [
+# define alt text for the images
+alt_text = [
     f"Episode summary: {row.description}",
     f'Image from "{row.title}", episode {row.episode} of season {row.season} of {row.show}',
     f'Image from "{row.title}", episode {row.episode} of season {row.season} of {row.show}',
     f'Image from "{row.title}", episode {row.episode} of season {row.season} of {row.show}',
 ]
 
-unique_key_post = f"startrek-bot:{row.show}:{row.season}:{row.episode}:1"
-unique_key_reply = f"startrek-bot:{row.show}:{row.season}:{row.episode}:2"
+# set up unique identifiers for the two posts
+post_key  = f"startrek-bot:{row.show}:{row.season}:{row.episode}:1"
+reply_key = f"startrek-bot:{row.show}:{row.season}:{row.episode}:2"
 
-blob_uploads_post = [bsky.upload_image(image_path=i) for i in images[0:4]]
+# create the first post object, giving it a unique identifier
+post = Post(markdown_text=markdown_text,
+            client_unique_key=post_key)
 
-bsky.create_post(
-    markdown_text=post_text_markdown,
-    blob_uploads=blob_uploads_post,
-    alt_texts=alt_texts,
-    client_unique_key=unique_key_post,
-)
+# create the reply, providing the unique identifier of the
+# original post that it's intended to reply to
+reply = Post(client_unique_key=reply_key,
+             reply_client_unique_key=post_key)
 
-blob_uploads_reply = [bsky.upload_image(image_path=i) for i in images[4:8]]
+# add the first 4 images to the post and the next 4 images to the reply,
+# resuing the same alt text for both sets of images. the images are
+# not uploaded until the create_post call.
+for n in range(4):
+    post.add_image(Image(filename=images[n], alt_text=alt_text[n]))
+    reply.add_image(Image(filename=images[n+4], alt_text=alt_text[n]))
 
-bsky.create_post(
-    text="",
-    blob_uploads=blob_uploads_reply,
-    alt_texts=alt_texts,
-    client_unique_key=unique_key_reply,
-    reply_client_unique_key=unique_key_post,
-)
+# create the posts
+bsky.create_post(post)
+bsky.create_post(reply)
