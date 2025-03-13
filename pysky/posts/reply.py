@@ -8,6 +8,9 @@ class Reply:
         self.original_post_repo = original_post_repo
         self.original_post_rkey = original_post_rkey
 
+    @property
+    def uri(self):
+        return "at://{self.original_post_repo}/app.bsky.feed.post/{self.original_post_rkey}"
 
     def as_dict(self, bsky):
         post = bsky.get_post(rkey=self.original_post_rkey, repo=self.original_post_repo)

@@ -3,18 +3,21 @@ from datetime import datetime, timezone
 import bs4
 import markdown
 
+from pysky.models import BskyPost
 from pysky.posts.utils import uploadable, uploaded
 from pysky.posts.facet import Facet
+
 
 class Post:
 
     # redundant to have both text and markdown_text because they can both be parsed as markdown?
-    def __init__(self, text=None, markdown_text=None, reply=None):
+    def __init__(self, text=None, markdown_text=None, reply=None, client_unique_key=None):
         self.text = text or ""
         self.facets = []
         self.videos = []
         self.images = []
         self.reply = reply
+        self.client_unique_key = client_unique_key
         if markdown_text:
             self.process_markdown_text(markdown_text)
 
@@ -83,3 +86,15 @@ class Post:
                 text += child_text
 
         self.text = text.decode("utf-8")
+
+
+    def save_to_database(self, response):
+        create_kwargs = {
+            "apilog": response.apilog,
+            "cid": response.cid,
+            "repo": response.apilog.request_did,
+            "uri": response.uri,
+            "client_unique_key": self.client_unique_key,
+            "reply_to": getattr(self.reply, "uri", None),
+        }
+        BskyPost.create(**create_kwargs)
