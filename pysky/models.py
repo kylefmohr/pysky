@@ -81,7 +81,7 @@ class BskyPost(BaseModel):
     uri = CharField()
     cid = CharField()
     client_unique_key = CharField(null=True)
-    reply_to = ForeignKeyField("self", backref="reply", null=True)
+    reply_to = CharField(null=True)
 
     class Meta:
         table_name = "bsky_post"
