@@ -33,10 +33,12 @@ from pysky.constants import (
 # that returns the aud required to get a service auth token
 SERVICE_AUTH_ENDPOINTS = {
     "xrpc/app.bsky.video.getUploadLimits": (
-        "app.bsky.video.getUploadLimits", lambda bsky: f"did:web:{HOSTNAME_VIDEO}"
+        "app.bsky.video.getUploadLimits",
+        lambda bsky: f"did:web:{HOSTNAME_VIDEO}",
     ),
     "xrpc/app.bsky.video.uploadVideo": (
-        "com.atproto.repo.uploadBlob", lambda bsky: f"did:web:{bsky.pds_service_hostname}"
+        "com.atproto.repo.uploadBlob",
+        lambda bsky: f"did:web:{bsky.pds_service_hostname}",
     ),
 }
 
@@ -404,7 +406,15 @@ class BskyClient(object):
             parent = None
 
         if not post:
-            post = get_post(text=text, markdown_text=markdown_text, blob_uploads=(blob_uploads or []), alt_texts=(alt_texts or []), facets=facets, reply=reply, video_blob_upload=video_blob_upload)
+            post = get_post(
+                text=text,
+                markdown_text=markdown_text,
+                blob_uploads=(blob_uploads or []),
+                alt_texts=(alt_texts or []),
+                facets=facets,
+                reply=reply,
+                video_blob_upload=video_blob_upload,
+            )
 
         response = self.create_record("app.bsky.feed.post", post)
 
@@ -549,7 +559,6 @@ class BskyClient(object):
         endpoint = "xrpc/app.bsky.video.getUploadLimits"
         return self.get(hostname=HOSTNAME_VIDEO, endpoint=endpoint)
 
-
     def upload_video(self, video_path, mimetype=None, extension=None, block_until_processed=True):
 
         if video_path and not mimetype:
@@ -583,9 +592,13 @@ class BskyClient(object):
                 processed_blob = r.jobStatus.blob
                 break
             elif r.jobStatus.state == "JOB_STATE_FAILED":
-                raise Exception(f"error state in video processing: {r.jobStatus.state} (jobId {uploaded_blob.jobId})")
+                raise Exception(
+                    f"error state in video processing: {r.jobStatus.state} (jobId {uploaded_blob.jobId})"
+                )
             elif n > 500:
-                raise ExcessiveIteration(f"waited too long for video upload processing (jobId {uploaded_blob.jobId})")
+                raise ExcessiveIteration(
+                    f"waited too long for video upload processing (jobId {uploaded_blob.jobId})"
+                )
 
             sleep(2)
 
@@ -602,7 +615,6 @@ class BskyClient(object):
             return SimpleNamespace({"blob": processed_blob})
         else:
             return uploaded_blob
-
 
     def get_video_upload_job_status(self, jobId):
         endpoint = "xrpc/app.bsky.video.getJobStatus"

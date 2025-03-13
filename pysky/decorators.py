@@ -9,6 +9,7 @@ INITIAL_CURSOR_MAP = {
     "xrpc/chat.bsky.convo.getLog": ZERO_CURSOR,
 }
 
+
 def process_cursor(func, **kwargs):
     """Decorator for any api call that returns a cursor, this looks up the previous
     cursor from the database, applies it to the call, and saves the newly returned

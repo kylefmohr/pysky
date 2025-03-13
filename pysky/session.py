@@ -12,7 +12,9 @@ SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
 
 class Session(object):
 
-    def __init__(self, ignore_cached_session=False, bsky_auth_username=None, bsky_auth_password=None):
+    def __init__(
+        self, ignore_cached_session=False, bsky_auth_username=None, bsky_auth_password=None
+    ):
         self.auth_header = {}
         self.ignore_cached_session = ignore_cached_session
 
