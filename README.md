@@ -10,7 +10,7 @@ A Bluesky API library with database logging/caching and some quality of life app
     * Automatically submit aspect ratio with images and videos
 * Simplified post/reply interface:
     * Reply to posts without needing to provide post refs
-    * Specify links in post text as Markdown without needing to provide facets
+    * Specify links and images/videos in post text as Markdown without needing to provide facets
 
 I created these features for my own projects with the goal of simplifying the Bluesky integration responsibilities at the application level and moved them into this project. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
 
