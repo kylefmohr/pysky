@@ -3,10 +3,26 @@ import os
 PATH = os.path.dirname(os.path.abspath(__file__))
 
 
+def test_image_resize():
+
+    from pysky.image import ensure_resized_image, MAX_ALLOWED_IMAGE_SIZE
+
+    files = ["image-large.jpg", "image-large.png", "image-large.gif", "image-large.webp"]
+
+    for filename in files:
+        data = open(f"{PATH}/media/{filename}", "rb").read()
+
+        assert len(data) > MAX_ALLOWED_IMAGE_SIZE
+
+        resized_image, resized, original_dimensions, new_dimensions = ensure_resized_image(data)
+
+        assert resized == True
+        assert len(resized_image) < MAX_ALLOWED_IMAGE_SIZE
+
+
 def test_image_aspect_ratio():
 
-    from pysky.image import ensure_resized_image, get_aspect_ratio
-    from pysky.video import get_aspect_ratio as get_video_aspect_ratio
+    from pysky.image import get_aspect_ratio
 
     expected_ar = [
         ("image1.gif", (475, 357)),
@@ -29,13 +45,13 @@ def test_image_aspect_ratio():
 
 def test_video_aspect_ratio():
 
-    from pysky.image import ensure_resized_image, get_aspect_ratio
     from pysky.video import get_aspect_ratio as get_video_aspect_ratio
 
     expected_ar = [
         ("video1.mp4", (640, 360)),
         ("video2.mp4", (720, 720)),
         ("video3.mp4", (480, 600)),
+        ("video1.mov", (852, 480)),
     ]
 
     for vid, ar in expected_ar:
