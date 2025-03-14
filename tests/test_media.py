@@ -1,13 +1,12 @@
 import os
 
-from pysky.image import ensure_resized_image, get_aspect_ratio
-
-from pysky.video import get_aspect_ratio as get_video_aspect_ratio
-
 PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 def test_image_aspect_ratio():
+
+    from pysky.image import ensure_resized_image, get_aspect_ratio
+    from pysky.video import get_aspect_ratio as get_video_aspect_ratio
 
     expected_ar = [
         ("image1.gif", (475, 357)),
@@ -29,6 +28,9 @@ def test_image_aspect_ratio():
 
 
 def test_video_aspect_ratio():
+
+    from pysky.image import ensure_resized_image, get_aspect_ratio
+    from pysky.video import get_aspect_ratio as get_video_aspect_ratio
 
     expected_ar = [
         ("video1.mp4", (640, 360)),
