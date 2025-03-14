@@ -50,8 +50,11 @@ def ensure_resized_image(image_data):
     return image_data, False, None, None
 
 
-def get_aspect_ratio(image_data):
+def get_aspect_ratio(image_data=None, filename=None):
     if not enable_image_operations:
         return None
+
+    if filename and not image_data:
+        image_data = open(filename, "rb").read()
 
     return Image.open(io.BytesIO(image_data)).size
