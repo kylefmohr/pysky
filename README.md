@@ -37,21 +37,26 @@ import pysky
 
 bsky = pysky.BskyClient()
 
+
 # simple post
 bsky.create_post(text="Hello")
+
 
 # that was shorthand for using a Post object, which enables more features
 bsky.create_post(post=pysky.Post("Hello"))
 
+
 # create a post with a link using markdown
 post = pysky.Post("Click [here](https://bsky.app/) to go to Bluesky")
 bsky.create_post(post=post)
+
 
 # you can also create a facet explicitly
 post = pysky.Post("Click here to go to Bluesky")
 facet = pysky.Facet(byteStart=6, byteEnd=10, uri="https://bsky.app/")
 post.add(facet)
 bsky.create_post(post=post)
+
 
 # create a post with 4 images using markdown
 post = pysky.Post("""Look at these 4 images:
@@ -62,6 +67,7 @@ post = pysky.Post("""Look at these 4 images:
 """)
 bsky.create_post(post=post)
 
+
 # create a post with images explicitly
 post = pysky.Post("Look at these 4 images:")
 post.add(pysky.Image(filename="./image1.png", alt="image 1 alt text"))
@@ -70,9 +76,26 @@ post.add(pysky.Image(filename="./image3.png", alt="image 3 alt text"))
 post.add(pysky.Image(filename="./image4.png", alt="image 4 alt text"))
 bsky.create_post(post=post)
 
+
 # create a post with a video
 post = pysky.Post("Look at this video:")
 post.add(pysky.Video(filename="./video.mp4"))
+bsky.create_post(post=post)
+
+
+# create a post and give it a unique key that can be used to reply to it
+posts = [
+    pysky.Post("Original post", client_unique_key="readme-12345"),
+    pysky.Post("Reply post", client_unique_key="readme-67890",
+        reply_client_unique_key="readme-12345")
+]
+for post in posts:
+    bsky.create_post(post=post)
+
+
+# reply to any other post by uri
+post = pysky.Post("👍",
+                  reply_uri="https://bsky.app/profile/bsky.app/post/3l6oveex3ii2l")
 bsky.create_post(post=post)
 ```
 
