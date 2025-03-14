@@ -1,5 +1,5 @@
 # pysky
-A Bluesky API library with database logging/caching focused on quality of life application-level features:
+A Bluesky API library focused on quality of life application-level features. A database backend is used to provide logging, caching, and persistence.
 
 * Automatic session caching/refreshing that persists across Python sessions
 * Cursor management - save the cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call, ensuring that all objects are returned and that each object is only returned once
@@ -12,7 +12,7 @@ A Bluesky API library with database logging/caching focused on quality of life a
     * Specify links and images in post text as Markdown without needing to provide facets
     * Reply to posts without needing to provide post refs
 
-I created these features for my own projects with the goal of simplifying Bluesky integration at the application level and moved them into this project. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
+I created these features for my own projects with the goal of simplifying Bluesky integration at the application level and moved them into this project in case they could be useful to anyone else. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
 
 ## Usage
 
@@ -255,7 +255,7 @@ It's safe to use the library with multiple accounts in one database, as sessions
 
 ## Database Logging
 
-All API calls are logged to the `api_call_log` table. Exception data on unsuccessful calls is saved with the other details of the request, which helps with debugging.
+All API calls are logged to the `bsky_api_call_log` table. Exception data on unsuccessful calls is saved with the other details of the request, which helps with debugging.
 
 ```python
 In [1]: response = bsky.get(endpoint="xrpc/app.bsky.feed.searchPosts",
@@ -264,7 +264,7 @@ In [1]: response = bsky.get(endpoint="xrpc/app.bsky.feed.searchPosts",
 
 2025-02-25 10:00:06 - ERROR - InvalidRequest - Error: Params must have the property "q"
 2025-02-25 10:00:06 - ERROR - For more details run the query:
-2025-02-25 10:00:06 - ERROR - SELECT * FROM api_call_log WHERE id=198960;
+2025-02-25 10:00:06 - ERROR - SELECT * FROM bsky_api_call_log WHERE id=198960;
 ---------------------------------------------------------------------------
 APIError                                  Traceback (most recent call last)
 Cell In[1], line 1
@@ -277,7 +277,7 @@ Cell In[1], line 1
 Note the message to the "pysky" logger giving the query to show the full record for the request.
 
 ```
-stroma=# SELECT * FROM api_call_log WHERE id=198960;
+stroma=# SELECT * FROM bsky_api_call_log WHERE id=198960;
 -[ RECORD 1 ]------------+----------------------------------------------------------------------------------
 id                       | 198960
 timestamp                | 2025-02-25 10:00:05.969271-05
@@ -343,9 +343,9 @@ def get_convo_logs(
 
 A value for the cursor argument will usually not be passed to this method. The typical use case is for the first call to this method to return all objects from the beginning, and subsequent calls only to return objects created since the previous call was made. For that behavior, call this method without passing a cursor value. The decorator code will override the default arg value as needed.
 
-Before the API call is made, the most recent cursor received for this endpoint is queried from the `api_call_log` table. If one is found, it's automatically added to the parameters passed to the call. If one is not found, a default cursor representing the beginning of time is used. Note that the value of this default cursor is different for this endpoint than others, the library handles this. See: [zero cursor](https://github.com/bluesky-social/atproto/issues/2760#issuecomment-2316325455). For other endpoints, the default cursor value should be None.
+Before the API call is made, the most recent cursor received for this endpoint is queried from the `bsky_api_call_log` table. If one is found, it's automatically added to the parameters passed to the call. If one is not found, a default cursor representing the beginning of time is used. Note that the value of this default cursor is different for this endpoint than others, the library handles this. See: [zero cursor](https://github.com/bluesky-social/atproto/issues/2760#issuecomment-2316325455). For other endpoints, the default cursor value should be None.
 
-If the API call gets a successful response, the new (returned) cursor value is saved to `api_call_log` as part of the normal course of database logging.
+If the API call gets a successful response, the new (returned) cursor value is saved to `bsky_api_call_log` as part of the normal course of database logging.
 
 The response attribute name for the list of objects returned, in this case "logs", is used by the decorator to collect the objects across multiple pages into one list, if necessary.
 
@@ -387,11 +387,11 @@ The third call returns no items because no more data has been created since the 
 
 The fourth call passes the zero cursor manually which gets all data going back to the beginning, receiving all 725 objects.
 
-Another way to retrieve data that's earlier than the latest saved cursor is to update/delete the row(s) in the `api_call_log` table for this endpoint to remove cursor history.
+Another way to retrieve data that's earlier than the latest saved cursor is to update/delete the row(s) in the `bsky_api_call_log` table for this endpoint to remove cursor history.
 
 ### Cursor Lookup Logic
 
-In the above example, when the cursor is looked up in the database, it filters on the endpoint and request_did fields of the `api_call_log` table. Sometimes this is not enough, as different types of data can be returned from the same endpoint. Such as `com.atproto.repo.listRecords` returning both blocks and follows, each of which should have its own cursor. To ensure that the right cursor is looked up in this scenario, the method that's decorated by `@process_cursor` should have a `cursor_key_func` default argument that takes the kwargs and returns a string that, together with request_did and endpoint, uniquely identifies the scope to which the cursor should apply. For example:
+In the above example, when the cursor is looked up in the database, it filters on the endpoint and request_did fields of the `bsky_api_call_log` table. Sometimes this is not enough, as different types of data can be returned from the same endpoint. Such as `com.atproto.repo.listRecords` returning both blocks and follows, each of which should have its own cursor. To ensure that the right cursor is looked up in this scenario, the method that's decorated by `@process_cursor` should have a `cursor_key_func` default argument that takes the kwargs and returns a string that, together with request_did and endpoint, uniquely identifies the scope to which the cursor should apply. For example:
 
 ```python
 @process_cursor
