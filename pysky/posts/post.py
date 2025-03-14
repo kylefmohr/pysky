@@ -7,6 +7,7 @@ from pysky.models import BskyPost
 from pysky.posts.utils import uploadable, uploaded
 from pysky.posts.facet import Facet
 from pysky.posts.reply import Reply
+from pysky.posts.image import Image
 
 
 class Post:
@@ -90,18 +91,27 @@ class Post:
 
         text = b""
 
-        for child in soup.p.contents:
-            if isinstance(child, bs4.element.NavigableString):
-                text += child.text.encode("utf-8")
-            elif isinstance(child, bs4.element.Tag):
-                assert child.name == "a", "invalid markdown code"
-                href = child.attrs["href"]
-                child_text = child.text.encode("utf-8")
-                facet = Facet(len(text), len(text) + len(child_text), href)
-                self.add_facet(facet)
-                text += child_text
+        for p in soup.find_all("p"):
+            for child in p.contents:
+                if isinstance(child, bs4.element.NavigableString):
+                    text += child.text.encode("utf-8")
+                elif isinstance(child, bs4.element.Tag) and child.name == "a":
+                    href = child.attrs["href"]
+                    child_text = child.text.encode("utf-8")
+                    facet = Facet(len(text), len(text) + len(child_text), href)
+                    self.add_facet(facet)
+                    text += child_text
+                elif isinstance(child, bs4.element.Tag) and child.name == "img":
+                    src = child.attrs.get('src')
+                    alt = child.attrs.get('alt')
+                    if src:
+                        self.add_image(Image(src, alt or ""))
+                else:
+                    print(type(child))
 
-        self.text = text.decode("utf-8")
+            text += b"\n"
+
+        self.text = text.decode("utf-8").strip()
 
     def save_to_database(self, response):
         create_kwargs = {
