@@ -1,13 +1,12 @@
 import os
 import time
-import mimetypes
 from itertools import count
 from types import SimpleNamespace
 
 from pysky.logging import log
 from pysky.video import get_aspect_ratio
 from pysky.exceptions import ExcessiveIteration
-
+from pysky.mimetype import guess_file_type
 
 class Video:
 
@@ -22,7 +21,7 @@ class Video:
     def upload(self, bsky, mimetype=None, block_until_processed=True):
 
         if not mimetype:
-            mimetype, _ = mimetypes.guess_file_type(self.filename)
+            mimetype, _ = guess_file_type(self.filename)
 
         if not mimetype:
             raise Exception(
@@ -69,7 +68,7 @@ class Video:
         if processed_blob:
             # push the blob struct one level down for
             # consistency with the image upload response blob
-            self.upload_response = SimpleNamespace({"blob": processed_blob})
+            self.upload_response = SimpleNamespace(blob=processed_blob)
         else:
             self.upload_response = uploaded_blob
 

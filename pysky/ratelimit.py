@@ -1,5 +1,5 @@
 import sys
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 
 from peewee import fn
 
@@ -28,7 +28,7 @@ def get_budget_used(did, hours):
     assert hours in [1, 24]
     budget_sum_row = (
         APICallLog.select(fn.sum(APICallLog.write_op_points_consumed))
-        .where(APICallLog.timestamp >= datetime.now(UTC) - timedelta(hours=hours))
+        .where(APICallLog.timestamp >= datetime.now(timezone.utc) - timedelta(hours=hours))
         .where(APICallLog.request_did == did)
         .first()
     )

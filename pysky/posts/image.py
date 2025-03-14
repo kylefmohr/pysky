@@ -1,8 +1,8 @@
 import os
-import mimetypes
 
 from pysky.logging import log
 from pysky.image import ensure_resized_image, get_aspect_ratio
+from pysky.mimetype import guess_file_type
 
 
 class Image:
@@ -21,9 +21,9 @@ class Image:
     def upload(self, bsky, allow_resize=True):
 
         if self.filename and not self.mimetype:
-            self.mimetype, _ = mimetypes.guess_file_type(self.filename)
+            self.mimetype, _ = guess_file_type(self.filename)
         elif self.extension and not self.mimetype:
-            self.mimetype, _ = mimetypes.guess_file_type(f"image.{self.extension}")
+            self.mimetype, _ = guess_file_type(f"image.{self.extension}")
 
         if not self.mimetype:
             raise Exception(
