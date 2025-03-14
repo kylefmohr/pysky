@@ -22,8 +22,10 @@ I created these features for my own projects with the goal of simplifying Bluesk
 >>> import pysky
 >>> bsky = pysky.BskyClient()
 
->>> response = bsky.get(endpoint="xrpc/app.bsky.feed.getPostThread",
-                        uri="at://did:plc:zcmchxw2gxlbincrchpdjopq/app.bsky.feed.post/3l432rr7o6i2n")
+>>> response = bsky.get(
+        endpoint="xrpc/app.bsky.feed.getPostThread",
+        uri="at://did:plc:zcmchxw2gxlbincrchpdjopq/app.bsky.feed.post/3l432rr7o6i2n",
+    )
 
 >>> response.thread.post.author.handle
 'craigweekend.bsky.social'
@@ -35,9 +37,11 @@ I created these features for my own projects with the goal of simplifying Bluesk
 'Daniel Craig introducing The Weekend'
 
 # simple POST example
->>> response = bsky.post(endpoint="xrpc/app.bsky.notification.putPreferences",
-                         priority=False,
-                         hostname="bsky.social")
+>>> response = bsky.post(
+        endpoint="xrpc/app.bsky.notification.putPreferences",
+        priority=False,
+        hostname="bsky.social",
+    )
 ```
 
 While there are wrappers that make some endpoints easier to call, `bsky.get` and `bsky.post` are intended to handle most use cases and can be wrapped by client code. Refer to the [official API docs](https://docs.bsky.app/docs/category/http-reference) for endpoint and parameter info. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
