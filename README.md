@@ -33,27 +33,27 @@ I created these features for my own projects with the goal of simplifying the Bl
 ### Creating Posts
 
 ```python
-from pysky import *
+import pysky
 
-bsky = BskyClient()
+bsky = pysky.BskyClient()
 
 # simple post
 bsky.create_post(text="Hello")
 
 # that was shorthand for using a Post object, which enables more features
-bsky.create_post(post=Post("Hello"))
+bsky.create_post(post=pysky.Post("Hello"))
 
 # creating a post with a link using markdown
-post = Post("Click [here](https://bsky.app/) to go to Bluesky")
+post = pysky.Post("Click [here](https://bsky.app/) to go to Bluesky")
 bsky.create_post(post=post)
 
 # creating a post with a facet explicitly
-post = Post("Click here to go to Bluesky")
-facet = Facet(byteStart=6, byteEnd=10, uri="https://bsky.app/")
-post.add_facet(facet)
+post = pysky.Post("Click here to go to Bluesky")
+facet = pysky.Facet(byteStart=6, byteEnd=10, uri="https://bsky.app/")
+post.add(facet)
 
 # creating a post with 4 images using markdown
-post = Post("""Look at these 4 images:
+post = pysky.Post("""Look at these 4 images:
 ![image 1 alt text](./image1.png)
 ![image 2 alt text](./image2.png)
 ![image 3 alt text](./image3.png)
@@ -61,16 +61,16 @@ post = Post("""Look at these 4 images:
 """)
 
 # creating a post with images explicitly
-post = Post("Look at these 4 images:")
-post.add_image(Image(filename="./image1.png", alt="image 1 alt text"))
-post.add_image(Image(filename="./image2.png", alt="image 2 alt text"))
-post.add_image(Image(filename="./image3.png", alt="image 3 alt text"))
-post.add_image(Image(filename="./image4.png", alt="image 4 alt text"))
-""")
+post = pysky.Post("Look at these 4 images:")
+post.add(pysky.Image(filename="./image1.png", alt="image 1 alt text"))
+post.add(pysky.Image(filename="./image2.png", alt="image 2 alt text"))
+post.add(pysky.Image(filename="./image3.png", alt="image 3 alt text"))
+post.add(pysky.Image(filename="./image4.png", alt="image 4 alt text"))
+
 
 # creating a post with a video
-post = Post("Look at this video:")
-post.add_video(Video(filename="./image1.png"))
+post = pysky.Post("Look at this video:")
+post.add(pysky.Video(filename="./image1.png"))
 ```
 
 ### Get a User Profile
