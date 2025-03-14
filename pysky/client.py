@@ -290,9 +290,9 @@ class BskyClient:
         response_object.apilog = apilog
         return response_object
 
-    def upload_blob(self, blob_data, mimetype, hostname=HOSTNAME_ENTRYWAY):
+    def upload_blob(self, data, mimetype, hostname=HOSTNAME_ENTRYWAY):
         return self.post(
-            data=blob_data,
+            data=data,
             endpoint="xrpc/com.atproto.repo.uploadBlob",
             headers={"Content-Type": mimetype},
             hostname=hostname,

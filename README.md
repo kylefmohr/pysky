@@ -1,36 +1,56 @@
 # pysky
-A Bluesky API library with database logging/caching and some quality of life application-level features:
+A Bluesky API library with database logging/caching focused on quality of life application-level features:
 
-* Automatic session caching/refreshing that works seamlessly across Python sessions
-* Cursor management - cache the last cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call to that API, across sessions, ensuring that all objects are returned and that each object is only returned once
-* Logging - metadata for all API calls and responses (including exceptions) is stored in the database
+* Automatic session caching/refreshing that persists across Python sessions
+* Cursor management - save the cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call, ensuring that all objects are returned and that each object is only returned once
+* Database logging - metadata for all API calls and responses, including exceptions
 * Rate limit monitoring
 * Simplified media upload:
     * Automatically resize images as needed to stay under the upload size limit
     * Automatically submit aspect ratio with images and videos
 * Simplified post/reply interface:
+    * Specify links and images in post text as Markdown without needing to provide facets
     * Reply to posts without needing to provide post refs
-    * Specify links and images/videos in post text as Markdown without needing to provide facets
 
-I created these features for my own projects with the goal of simplifying the Bluesky integration responsibilities at the application level and moved them into this project. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
-
-## Installation / Setup
-
-1. Clone the repo, add it to PYTHONPATH, pip install -r requirements.txt
-
-2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
-
-    * PostgreSQL: If the official PostgreSQL environment variables are set: (PGUSER, PGHOST, PGDATABASE, PGPASSWORD, optionally PGPORT) then that database will be used.
-    * SQLite: If those aren't set, the SQLite database `$BSKY_SQLITE_FILENAME` will be used. If that isn't set then ":memory:" will be used, an ephemeral in-memory database.
-    * Alternatively, you can instantiate a Peewee database object yourself and pass it to the BskyClient constructor as `peewee_db` to override any database environment variables.
-
-3. Create database tables: run `./pysky/bin/create_tables.py`
-
-4. (Optional) Set authentication environment variables for username and app password: `BSKY_AUTH_USERNAME`, `BSKY_AUTH_PASSWORD`. If only public endpoints are going to be accessed, these aren't needed. Credentials can also be passed to the `BskyClient` constructor as `bsky_auth_username` and `bsky_auth_password`.
+I created these features for my own projects with the goal of simplifying Bluesky integration at the application level and moved them into this project. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
 
 ## Usage
 
+### Basic Usage
+
+```python
+>>> import pysky
+>>> bsky = pysky.BskyClient()
+
+>>> response = bsky.get(endpoint="xrpc/app.bsky.feed.getPostThread",
+                        uri="at://did:plc:zcmchxw2gxlbincrchpdjopq/app.bsky.feed.post/3l432rr7o6i2n")
+
+>>> response.thread.post.author.handle
+'craigweekend.bsky.social'
+
+>>> response.thread.post.record.text
+'Ladies and gentlemen... the weekend.'
+
+>>> response.thread.post.record.embed.alt
+'Daniel Craig introducing The Weekend'
+
+# simple POST example
+>>> response = bsky.post(endpoint="xrpc/app.bsky.notification.putPreferences",
+                         priority=False,
+                         hostname="bsky.social")
+```
+
+While there are wrappers that make some endpoints easier to call, `bsky.get` and `bsky.post` are intended to handle most use cases and can be wrapped by client code. Refer to the [official API docs](https://docs.bsky.app/docs/category/http-reference) for endpoint and parameter info. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
+
+The default hostname is "public.api.bsky.app" and can be used without authentication. While "bsky.social" was provided as the hostname for the POST example, the request was actually sent straight to the PDS host. See: [API Hosts and Auth](https://docs.bsky.app/docs/advanced-guides/api-directory#bluesky-services).
+
+In this example, the client used credentials set as environment variables. Session creation and refresh is handled automatically and stored in the database.
+
+See more detailed documentation here.
+
 ### Creating Posts
+
+A simple API for creating posts is provided for convenience, but it could also be done through the `bsky.post` method as shown above.
 
 ```python
 import pysky
@@ -58,7 +78,8 @@ post.add(facet)
 bsky.create_post(post=post)
 
 
-# create a post with 4 images using markdown
+# create a post with 4 images using markdown. the images will be resized
+# as needed to stay within the 976.56KB size limit.
 post = pysky.Post("""Look at these 4 images:
 ![image 1 alt text](./image1.png)
 ![image 2 alt text](./image2.png)
@@ -99,33 +120,9 @@ post = pysky.Post("👍",
 bsky.create_post(post=post)
 ```
 
-### Get a User Profile
+The `reply_uri` value can be the at:// URI form or the https:// form used above, but at:// is safer to use as there's no guarantee that other possible/future forms of a post URL will work.
 
-```python
->>> from pysky import BskyClient
->>> bsky = BskyClient()
->>> profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
-...                    params={"actor": "did:plc:zcmchxw2gxlbincrchpdjopq"})
->>> profile.handle
-'craigweekend.bsky.social'
-
-# the params dict is what's passed through to the API,
-# but its elements can also be passed to get() as kwargs:
->>> profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
-...                    actor="craigweekend.bsky.social")
->>> profile.displayName
-"It's The Weekend 😌"
-```
-
-### Create a Post
-
-You can work with either higher level helper methods or the lower-level `bsky.get()` and `bsky.post()`. These two calls are equivalent:
-
-```python
->>> response = bsky.create_post("Hello Bluesky")
->>> response.uri
-'at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3lk5iaxmqex26'
-```
+An example of creating a post with the lower-level API:
 
 ```python
 >>> from datetime import datetime, timezone
@@ -139,30 +136,26 @@ You can work with either higher level helper methods or the lower-level `bsky.ge
 ...     }
 ... }
 ...
->>> response = bsky.post(hostname="bsky.social",
-...                      endpoint="xrpc/com.atproto.repo.createRecord",
-...                      params=params)
-...
+>>> bsky.post(hostname="bsky.social",
+...           endpoint="xrpc/com.atproto.repo.createRecord",
+...           params=params)
 ```
 
-Most interaction with this library happens through just a few different methods:
+### Get a User Profile
 
-* Creating a `BskyClient` object
-* Calling `BskyClient.get()` and `BskyClient.post()`
-* See `pysky/client.py` for examples of convenience methods wrapping `get()` and `post()`:
-    * `BskyClient.upload_blob()`
-    * `BskyClient.upload_image()`
-    * `BskyClient.get_record()`
-    * `BskyClient.get_post()`
-    * `BskyClient.create_record()`
-    * `BskyClient.create_post()`
-    * `BskyClient.delete_record()`
-    * `BskyClient.delete_post()`
-    * `BskyClient.list_records()`
+```python
+>>> profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
+...                    params={"actor": "did:plc:zcmchxw2gxlbincrchpdjopq"})
+>>> profile.handle
+'craigweekend.bsky.social'
 
-These wrapper methods are not meant to be comprehensive, the user is expected to primarily call get/post or provide further wrappers around them. This library is intended to stay simple and focus on higher level features. Refer to the [official API reference](https://docs.bsky.app/docs/category/http-reference) for endpoints and parameters to provide. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
-
-In addition to `endpoint` a `hostname` argument must be provided when the default value of `public.api.bsky.app` is not appropriate. See: [API Hosts and Auth](https://docs.bsky.app/docs/advanced-guides/api-directory#bluesky-services).
+# the params dict is what's passed through to the API,
+# but its elements can also be passed to get() as kwargs:
+>>> profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
+...                    actor="craigweekend.bsky.social")
+>>> profile.displayName
+"It's The Weekend 😌"
+```
 
 ## Passing Arguments
 
@@ -196,161 +189,23 @@ The library will handle passing these values as a query string to a GET request 
 
 ## POST Examples:
 
-As needed, call `bsky.post()` instead of `bsky.get()`. This code will create a post from your account:
-
-```python
-from datetime import datetime, timezone
-
-params = {
-    "repo": bsky.did,
-    "collection": "app.bsky.feed.post",
-    "record": {
-        "$type": "app.bsky.feed.post",
-        "text": "Hello Bluesky",
-        "createdAt": datetime.now(timezone.utc).isoformat(),
-    }
-}
-
-response = bsky.post(hostname="bsky.social",
-                     endpoint="xrpc/com.atproto.repo.createRecord",
-                     params=params)
-```
-
 Binary data (e.g. image uploads) should be passed as the `data` argument to `BskyClient.post()`.
 
 ```python
-blob_data = open("file.png", "rb").read()
+data = open("image.png", "rb").read()
 
-response = bsky.post(data=blob_data,
+response = bsky.post(data=data,
                      endpoint="xrpc/com.atproto.repo.uploadBlob",
                      headers={"Content-Type": "image/png"},
                      hostname="bsky.social")
 ```
 
+However, this is done for you if using the `Image` and `Post` classes as shown in the "Creating Posts" section above.
+
 There's an `upload_blob()` wrapper method for this:
 
 ```python
-response = bsky.upload_blob(blob_data=blob_data, mimetype="image/png")
-```
-
-To create a post with two images attached using the `create_post()` wrapper for `post()`:
-
-```python
-In [1]: blobs = [bsky.upload_image(image_path=f) for f in ["file1.png","file2.png"]]
-
-In [2]: alt_texts = ["image 1 alt text", "image 2 alt text"]
-
-In [3]: response = bsky.create_post(text="example post with two images attached",
-                                    blob_uploads=blobs,
-                                    alt_texts=alt_texts)
-```
-
-As mentioned, there are only a few convenience functions like this that wrap `get()` and `post()`. Here's the equivalent post using the lower level APIs. Note that `upload_blob()` will not attempt to resize images that are too large as `upload_image()` will, because not all blobs are assumed to be images.
-
-```python
-In [1]: from datetime import datetime, timezone
-
-In [2]: img1 = bsky.upload_blob(blob_data=open("file1.png", "rb").read(), mimetype="image/png")
-   ...: img2 = bsky.upload_blob(blob_data=open("file2.png", "rb").read(), mimetype="image/png")
-
-In [3]: images = [
-   ...:       {
-   ...:         "alt": "image 1 alt text",
-   ...:         "image": {
-   ...:           "$type": "blob",
-   ...:           "ref": {
-   ...:             "$link": getattr(img1.blob.ref, '$link'),
-   ...:           },
-   ...:           "mimeType": img1.blob.mimeType,
-   ...:           "size": img1.blob.size,
-   ...:         }
-   ...:       },
-   ...:       {
-   ...:         "alt": "image 2 alt text",
-   ...:         "image": {
-   ...:           "$type": "blob",
-   ...:           "ref": {
-   ...:             "$link": getattr(img2.blob.ref, '$link'),
-   ...:           },
-   ...:           "mimeType": img2.blob.mimeType,
-   ...:           "size": img2.blob.size,
-   ...:         }
-   ...:       }
-   ...:     ]
-
-In [4]: post = {
-   ...:   "$type": "app.bsky.feed.post",
-   ...:   "text": "example post with two images attached",
-   ...:   "createdAt": datetime.now(timezone.utc).isoformat(),
-   ...:   "embed": {
-   ...:     "$type": "app.bsky.embed.images",
-   ...:     "images": images,
-   ...:   }
-   ...: }
-
-In [5]: response = bsky.create_post(post)
-
-In [6]: response
-Out[6]:
-namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3livdaserb223',
-          cid='bafyreihnclijoiunual4euonh53q27f2dpxawlvakbenik4z55tmwotdxu',
-          commit=namespace(cid='bafyreibnb3goacdmjyd7dq3py5v4bfjak2bystvjvf7fqstqaexutcyyhy',
-                           rev='3livdasf4y223'),
-          validationStatus='valid')
-```
-
-Note that a `$link` attribute can't be accessed with dot notation due to the dollar sign, so `getattr(img1.blob.ref, '$link')` is required.
-
-## Replying to Posts
-
-When using the `create_post` convenience method you can optionally pass a `client_unique_key` value. To create a reply to that post, call `create_post` again and pass the `client_unique_key` from the first post as `reply_client_unique_key` to the second call.
-
-```python
-
-In [1]: bsky.create_post(text="test post",
-                         client_unique_key="original-post-12345")
-Out[1]:
-namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3ljxpzbltvg2q',
-          cid='bafyreihfe5snabvajtw25pq2hqzpqy3csgd24nhc6zc7tv5lizgtc44rri',
-          ...)
-
-In [2]: bsky.create_post(text="test reply",
-                         client_unique_key="original-post-12345-reply",
-                         reply_client_unique_key="original-post-12345")
-Out[2]:
-namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3ljxq2aouaa2p',
-          cid='bafyreietfnkhwosxzi2cjqt2xmcn5y6xqajnzxavjknsjh42lassmqrc3q',
-          ...)
-```
-
-To reply to a post not created through this library with a client_unique_key, pass `reply_uri` instead:
-
-```python
-bsky.create_post(text="test reply",
-                 reply_uri="at://bsky.app/app.bsky.feed.post/3l6oveex3ii2l")
-```
-
-`https://bsky.app/profile/bsky.app/post/3l6oveex3ii2l` will also work as a value for `reply_uri`, though it's not guaranteed that other possible/future forms of a post URL will work.
-
-A reply can also be made by passing the reply data structure [documented here](https://docs.bsky.app/docs/advanced-guides/posts#replies) to `create_post` as the `reply` argument.
-
-```python
-In [1]: reply = {
-    ...:     "root": {
-    ...:         "uri": "at://did:plc:5nwvsmfskjx5nmx4w3o35v6f/app.bsky.feed.post/3ljoj6vxt2e2r",
-    ...:         "cid": "bafyreiemtom4dcbuzaz7unliimxlj6zeiz47cz3q37udvlxaolbk33hnce"
-    ...:     },
-    ...:     "parent": {
-    ...:         "uri": "at://did:plc:5nwvsmfskjx5nmx4w3o35v6f/app.bsky.feed.post/3ljoj6vxt2e2r",
-    ...:         "cid": "bafyreiemtom4dcbuzaz7unliimxlj6zeiz47cz3q37udvlxaolbk33hnce"
-    ...:     }
-    ...: }
-
-In [2]: bsky.create_post(text="test reply", reply=reply)
-Out[2]:
-namespace(uri='at://did:plc:o6ggjvnj4ze3mnrpnv5oravg/app.bsky.feed.post/3ljxspvtuxq2s',
-          cid='bafyreicdozcnnb4h7fxnfjohsfbz4bzrntiyx4srdvyqiykx6ixpttpmui',
-          ...)
+response = bsky.upload_blob(data=data, mimetype="image/png")
 ```
 
 ## Responses
@@ -393,22 +248,6 @@ If on the first (or any subsequent) use of the current session the API responds 
 If a request is made to the default public hostname `public.api.bsky.app` then the session headers, if a session has been established, are not sent in the request.
 
 It's safe to use the library with multiple accounts in one database, as sessions are scoped to a username.
-
-## Image Resizing
-
-While the Bluesky frontend will accept a large image and resize it as needed to stay within the 976.56KB size limit, the API does not. Images posted must be within the limit. The `BskyClient.upload_image()` method will automatically attempt to do this resizing while preserving the aspect ratio.
-
-```python
-BskyClient.upload_image(image_data=None,
-                        image_path=None,
-                        mimetype=None,
-                        extension=None,
-                        allow_resize=True)
-```
-
-You can pass either a file path or image bytes. The mimetype will be guessed from either the path or extension if not passed explicitly. At least one of image_path, mimetype, or extension must be passed.
-
-If you don't wish to install pillow and use this feature, pass `allow_resize=False`.
 
 ## Database Logging
 
@@ -593,6 +432,27 @@ RateLimit-Reset: 1741030149
 RateLimit-Policy: 3000;w=300
 ```
 
+## Installation / Setup
+
+1. Clone the repo, add it to PYTHONPATH, pip install -r requirements.txt
+
+2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
+
+    * PostgreSQL: If the official PostgreSQL environment variables are set: (PGUSER, PGHOST, PGDATABASE, PGPASSWORD, optionally PGPORT) then that database will be used.
+    * SQLite: If those aren't set, the SQLite database `$BSKY_SQLITE_FILENAME` will be used. If that isn't set then ":memory:" will be used, an ephemeral in-memory database.
+    * Alternatively, you can instantiate a Peewee database object yourself and pass it to the BskyClient constructor as `peewee_db` to override any database environment variables.
+
+3. Create database tables: run `./pysky/bin/create_tables.py`
+
+4. (Optional) Set authentication environment variables for username and app password: `BSKY_AUTH_USERNAME`, `BSKY_AUTH_PASSWORD`. If only public endpoints are going to be accessed, these aren't needed. Credentials can also be passed to the `BskyClient` constructor as `bsky_auth_username` and `bsky_auth_password`.
+
+
 ## Tests
 
-Note that the tests will talk to the live API and are partly designed around the state of my own Bluesky account. They're really only meant to be useful to me. But check them out if you'd like and modify as needed. Only `test_non_authenticated_failure` and `test_rate_limit` would (potentially) do any writing to the account, and only in the case of failure. The tests only use an ephemeral in-memory database and won't touch the environment-configured database.
+Note that some of the tests will talk to the live API and are partly designed around the state of my own Bluesky account. They're really only meant to be useful to me. But check them out if you'd like and modify as needed. Only `test_non_authenticated_failure` and `test_rate_limit` would (potentially) do any writing to the account, and only in the case of failure. The tests only use an ephemeral in-memory database and won't touch the environment-configured database.
+
+## Compatibility & Limitations
+
+Pysky was developed with Python 3.13.0 on Ubuntu 24.04.1 but also tested on Windows 11/Python 3.10.4.
+
+How well the media features work on Linux may depend on how Python was built/installed and/or what underlying OS packages are installed. The video features depend on ffmpeg being present. Handling uncommon media formats or edge cases are likely outside the scope of this project.
