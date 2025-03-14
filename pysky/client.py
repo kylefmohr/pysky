@@ -430,7 +430,15 @@ class BskyClient:
             if not user:
                 user = BskyUserProfile(did=response.did)
 
-            fields = "handle,displayName,followersCount,followsCount,postsCount,description,createdAt".split(",")
+            fields = [
+                "handle",
+                "displayName",
+                "followersCount",
+                "followsCount",
+                "postsCount",
+                "description",
+                "createdAt",
+            ]
             for f in fields:
                 setattr(user, f, getattr(response, f, None))
 

@@ -7,7 +7,9 @@ from pysky.mimetype import guess_file_type
 
 class Image:
 
-    def __init__(self, filename=None, data=None, extension=None, mimetype=None, alt=None, strict=True):
+    def __init__(
+        self, filename=None, data=None, extension=None, mimetype=None, alt=None, strict=True
+    ):
         self.filename = filename
         self.data = data
         self.extension = extension
@@ -16,7 +18,9 @@ class Image:
         self.aspect_ratio = None
         self.upload_response = None
         if filename and strict:
-            assert os.path.exists(filename), f"tried to create image object for files that does not exist: {filename}"
+            assert os.path.exists(
+                filename
+            ), f"tried to create image object for files that does not exist: {filename}"
 
     def upload(self, bsky, allow_resize=True):
 

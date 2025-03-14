@@ -3,6 +3,7 @@ import re
 from pysky.models import BskyPost, APICallLog
 from pysky.client import BskyClient
 
+
 class Reply:
 
     def __init__(self, original_post_repo, original_post_rkey):
@@ -43,16 +44,16 @@ class Reply:
         return Reply(reply_repo, reply_rkey)
 
     @staticmethod
-    def from_client_unique_key(client_unique_key, did=None):
+    def from_client_unique_key(client_unique_key):
+        # note - this does not scope to user did
         parent = (
             BskyPost.select(BskyPost.uri)
             .join(APICallLog)
             .where(
                 BskyPost.client_unique_key == client_unique_key,
-                #APICallLog.request_did == did,
             )
             .first()
         )
         assert parent, "can't create a reply to an invalid parent"
-        # this approach means BskyPost.cid is unnecessary
+        # this approach means BskyPost.cid in the model is no longer necessary
         return Reply.from_uri(parent.uri)

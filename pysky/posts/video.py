@@ -8,6 +8,7 @@ from pysky.video import get_aspect_ratio
 from pysky.exceptions import ExcessiveIteration
 from pysky.mimetype import guess_file_type
 
+
 class Video:
 
     def __init__(self, filename):

@@ -15,7 +15,16 @@ from pysky.posts.external import External
 class Post:
 
     # redundant to have both text and markdown_text because they can both be parsed as markdown?
-    def __init__(self, text=None, reply=None, client_unique_key=None, reply_client_unique_key=None, reply_uri=None, convert_markdown=True, strict=True):
+    def __init__(
+        self,
+        text=None,
+        reply=None,
+        client_unique_key=None,
+        reply_client_unique_key=None,
+        reply_uri=None,
+        convert_markdown=True,
+        strict=True,
+    ):
         self.text = text or ""
         self.facets = []
         self.videos = []
@@ -40,7 +49,6 @@ class Post:
         }
 
         type_map[type(obj)](obj)
-
 
     def add_external(self, external):
         self.external = external
@@ -119,7 +127,9 @@ class Post:
 
         text = b""
 
-        for p in soup.find_all(["p","span","div","h1","h2","h3","h4","h5","h6","pre","code"]):
+        for p in soup.find_all(
+            ["p", "span", "div", "h1", "h2", "h3", "h4", "h5", "h6", "pre", "code"]
+        ):
             for child in p.contents:
                 if isinstance(child, bs4.element.NavigableString):
                     text += child.text.encode("utf-8")
@@ -130,8 +140,8 @@ class Post:
                     self.add_facet(facet)
                     text += child_text
                 elif isinstance(child, bs4.element.Tag) and child.name == "img":
-                    src = child.attrs.get('src')
-                    alt = child.attrs.get('alt')
+                    src = child.attrs.get("src")
+                    alt = child.attrs.get("alt")
                     if src:
                         self.add_image(Image(src, alt=(alt or ""), strict=self.strict))
                 elif isinstance(child, bs4.element.Tag) and child.name in ["em","strong","i","b"]:

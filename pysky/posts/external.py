@@ -1,4 +1,3 @@
-
 class External:
 
     def __init__(self, external=None):
