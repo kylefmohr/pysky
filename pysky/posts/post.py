@@ -130,7 +130,7 @@ class Post:
                     src = child.attrs.get('src')
                     alt = child.attrs.get('alt')
                     if src:
-                        self.add_image(Image(src, alt or "", strict=self.strict))
+                        self.add_image(Image(src, alt=(alt or ""), strict=self.strict))
                 elif isinstance(child, bs4.element.Tag) and child.name in ["em","strong","i","b"]:
                     text += child.text.encode("utf-8")
 
