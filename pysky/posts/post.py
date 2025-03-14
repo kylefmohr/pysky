@@ -8,6 +8,8 @@ from pysky.posts.utils import uploadable, uploaded
 from pysky.posts.facet import Facet
 from pysky.posts.reply import Reply
 from pysky.posts.image import Image
+from pysky.posts.video import Video
+from pysky.posts.external import External
 
 
 class Post:
@@ -26,6 +28,19 @@ class Post:
         if convert_markdown:
             self.convert_markdown_text()
 
+    def add(self, obj):
+
+        type_map = {
+            Facet: self.add_facet,
+            Image: self.add_image,
+            Video: self.add_video,
+            External: self.add_external,
+            list: lambda objs: [self.add(obj) for obj in objs],
+        }
+
+        type_map[type(obj)](obj)
+
+
     def add_external(self, external):
         self.external = external
 
@@ -34,10 +49,16 @@ class Post:
 
     def add_video(self, video):
         assert uploadable(video), "video must be a Video object"
+        if len(self.images) >= 1:
+            raise Exception(f"too many videos added to post")
+
         self.videos.append(video)
 
     def add_image(self, image):
         assert uploadable(image), "image must be an Image object"
+        if len(self.images) >= 4:
+            raise Exception(f"too many images added to post")
+
         self.images.append(image)
 
     def add_images(self, images):
