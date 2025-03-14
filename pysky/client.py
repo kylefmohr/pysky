@@ -3,13 +3,14 @@ import json
 import inspect
 from time import time
 from types import SimpleNamespace
+from datetime import datetime, timezone
 
 import peewee
 import requests
 
 from pysky.logging import log
 from pysky.session import Session
-from pysky.models import BaseModel, BskySession, BskyUserProfile, APICallLog
+from pysky.models import BaseModel, BskySession, BskyUserProfile, APICallLog, BskyPost
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
 from pysky.exceptions import RefreshSessionRecursion, APIError, NotAuthenticated
@@ -307,14 +308,31 @@ class BskyClient:
             hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.createRecord", params=params
         )
 
-    def create_post(self, post):
+    def create_post(self, text=None, post=None):
 
-        post.upload_files(self)
+        if text and not post:
+            post_dict = {
+                "$type": "app.bsky.feed.post",
+                "text": text,
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+            }
+        else:
+            post.upload_files(self)
+            post_dict = post.as_dict()
 
-        response = self.create_record("app.bsky.feed.post", post.as_dict())
+        response = self.create_record("app.bsky.feed.post", post_dict)
 
         if response.apilog.http_status_code == 200:
-            post.save_to_database(response)
+            if hasattr(post, "save_to_database"):
+                post.save_to_database(response)
+            else:
+                create_kwargs = {
+                    "apilog": response.apilog,
+                    "cid": response.cid,
+                    "repo": response.apilog.request_did,
+                    "uri": response.uri,
+                }
+                BskyPost.create(**create_kwargs)
 
         return response
 

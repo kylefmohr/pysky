@@ -21,7 +21,7 @@ if not row:
     exit(0)
 
 # due to the markdown format, the episode title will be a link
-markdown_text = f"""
+text = f"""
 {row.date.strftime("%B %d, %Y").replace(" 0", " ")}
 ["{row.title}"]({row.link})
 {row.show} - Season {row.season}, Episode {row.episode}
@@ -43,12 +43,11 @@ post_key  = f"startrek-bot:{row.show}:{row.season}:{row.episode}:1"
 reply_key = f"startrek-bot:{row.show}:{row.season}:{row.episode}:2"
 
 # create the first post object, giving it a unique identifier
-post = Post(markdown_text=markdown_text,
-            client_unique_key=post_key)
+post = Post(text=text, client_unique_key=post_key)
 
 # create the reply, providing the unique identifier of the
 # original post that it's intended to reply to
-reply = Post(client_unique_key=reply_key,
+reply = Post(text="", client_unique_key=reply_key,
              reply_client_unique_key=post_key)
 
 # add the first 4 images to the post and the next 4 images to the reply,
