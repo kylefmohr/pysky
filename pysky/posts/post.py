@@ -13,7 +13,7 @@ from pysky.posts.image import Image
 class Post:
 
     # redundant to have both text and markdown_text because they can both be parsed as markdown?
-    def __init__(self, text=None, markdown_text=None, reply=None, client_unique_key=None, reply_client_unique_key=None):
+    def __init__(self, text=None, reply=None, client_unique_key=None, reply_client_unique_key=None, convert_markdown=True, strict=True):
         self.text = text or ""
         self.facets = []
         self.videos = []
@@ -22,8 +22,9 @@ class Post:
         self.reply = reply
         self.client_unique_key = client_unique_key
         self.reply_client_unique_key = reply_client_unique_key
-        if markdown_text:
-            self.process_markdown_text(markdown_text)
+        self.strict = strict
+        if convert_markdown:
+            self.convert_markdown_text()
 
     def add_external(self, external):
         self.external = external
@@ -41,7 +42,7 @@ class Post:
 
     def add_images(self, images):
         for img in images:
-            self.add_image(img)
+            self.add_image(img, self.strict)
 
     def upload_files(self, bsky):
         for uploadable_file in self.images + self.videos:
@@ -85,13 +86,16 @@ class Post:
 
         return post
 
-    def process_markdown_text(self, markdown_text):
+    def convert_markdown_text(self):
 
-        soup = bs4.BeautifulSoup(markdown.markdown(markdown_text), "html.parser")
+        soup = bs4.BeautifulSoup(markdown.markdown(self.text), "html.parser")
+
+        for match in soup.findAll("code"):
+            match.replaceWithChildren()
 
         text = b""
 
-        for p in soup.find_all("p"):
+        for p in soup.find_all(["p","span","div","h1","h2","h3","h4","h5","h6","pre","code"]):
             for child in p.contents:
                 if isinstance(child, bs4.element.NavigableString):
                     text += child.text.encode("utf-8")
@@ -105,9 +109,9 @@ class Post:
                     src = child.attrs.get('src')
                     alt = child.attrs.get('alt')
                     if src:
-                        self.add_image(Image(src, alt or ""))
-                else:
-                    print(type(child))
+                        self.add_image(Image(src, alt or "", strict=self.strict))
+                elif isinstance(child, bs4.element.Tag) and child.name in ["em","strong","i","b"]:
+                    text += child.text.encode("utf-8")
 
             text += b"\n"
 

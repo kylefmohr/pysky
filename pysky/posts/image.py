@@ -7,7 +7,7 @@ from pysky.image import ensure_resized_image, get_aspect_ratio
 
 class Image:
 
-    def __init__(self, filename=None, data=None, extension=None, mimetype=None, alt=None):
+    def __init__(self, filename=None, data=None, extension=None, mimetype=None, alt=None, strict=True):
         self.filename = filename
         self.data = data
         self.extension = extension
@@ -15,7 +15,7 @@ class Image:
         self.alt = alt
         self.aspect_ratio = None
         self.upload_response = None
-        if filename:
+        if filename and strict:
             assert os.path.exists(filename), f"tried to create image object for files that does not exist: {filename}"
 
     def upload(self, bsky, allow_resize=True):
