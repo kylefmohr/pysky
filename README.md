@@ -46,7 +46,7 @@ The default hostname is "public.api.bsky.app" and can be used without authentica
 
 In this example, the client used credentials set as environment variables. Session creation and refresh is handled automatically and stored in the database.
 
-See more detailed documentation here.
+More details about sessions and configuration are included in sections below.
 
 ### Creating Posts
 
