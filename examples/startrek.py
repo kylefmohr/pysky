@@ -54,8 +54,8 @@ reply = Post(text="", client_unique_key=reply_key,
 # resuing the same alt text for both sets of images. the images are
 # not uploaded until the create_post call.
 for n in range(4):
-    post.add_image(Image(filename=images[n], alt=alt[n]))
-    reply.add_image(Image(filename=images[n+4], alt=alt[n]))
+    post.add(Image(filename=images[n], alt=alt[n]))
+    reply.add(Image(filename=images[n+4], alt=alt[n]))
 
 # create the posts
 bsky.create_post(post)
