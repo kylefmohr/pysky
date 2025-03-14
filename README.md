@@ -70,7 +70,7 @@ post.add(pysky.Image(filename="./image4.png", alt="image 4 alt text"))
 
 # creating a post with a video
 post = pysky.Post("Look at this video:")
-post.add(pysky.Video(filename="./image1.png"))
+post.add(pysky.Video(filename="./video.mp4"))
 ```
 
 ### Get a User Profile
