@@ -15,13 +15,14 @@ from pysky.posts.external import External
 class Post:
 
     # redundant to have both text and markdown_text because they can both be parsed as markdown?
-    def __init__(self, text=None, reply=None, client_unique_key=None, reply_client_unique_key=None, convert_markdown=True, strict=True):
+    def __init__(self, text=None, reply=None, client_unique_key=None, reply_client_unique_key=None, reply_uri=None, convert_markdown=True, strict=True):
         self.text = text or ""
         self.facets = []
         self.videos = []
         self.images = []
         self.external = None
         self.reply = reply
+        self.reply_uri = reply_uri
         self.client_unique_key = client_unique_key
         self.reply_client_unique_key = reply_client_unique_key
         self.strict = strict
@@ -77,6 +78,8 @@ class Post:
 
         if not self.reply and self.reply_client_unique_key:
             self.reply = Reply.from_client_unique_key(self.reply_client_unique_key)
+        elif not self.reply and self.reply_uri:
+            self.reply = Reply.from_uri(self.reply_uri)
 
         post = {
             "$type": "app.bsky.feed.post",
