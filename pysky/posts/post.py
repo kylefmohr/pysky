@@ -114,8 +114,8 @@ class Post:
 
         soup = bs4.BeautifulSoup(markdown.markdown(self.text), "html.parser")
 
-        for match in soup.findAll("code"):
-            match.replaceWithChildren()
+        for match in soup.find_all("code"):
+            match.unwrap()
 
         text = b""
 
