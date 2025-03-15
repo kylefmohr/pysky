@@ -45,7 +45,7 @@ def test_image_aspect_ratio():
 
 def test_video_aspect_ratio():
 
-    from pysky.video import get_aspect_ratio as get_video_aspect_ratio
+    from pysky import Video
 
     expected_ar = [
         ("video1.mp4", (640, 360)),
@@ -55,4 +55,5 @@ def test_video_aspect_ratio():
     ]
 
     for vid, ar in expected_ar:
-        assert get_video_aspect_ratio(f"{PATH}/media/{vid}") == ar
+        v = Video(f"{PATH}/media/{vid}")
+        assert v.get_aspect_ratio() == ar
