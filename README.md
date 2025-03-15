@@ -1,6 +1,7 @@
 # pysky
 A Bluesky API library focused on quality of life application-level features. A database backend is used to provide logging, caching, and persistence.
 
+Features:
 * Automatic session caching/refreshing that persists across Python sessions
 * Cursor management - save the cursor returned from endpoints that return large collections and automatically pass it to the next call
 * Database logging - metadata for all API calls and responses, including exceptions
