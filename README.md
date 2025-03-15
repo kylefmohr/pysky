@@ -447,7 +447,7 @@ RateLimit-Policy: 3000;w=300
 
 ## Service Auth
 
-When the client calls `app.bsky.video.getUploadLimits` or `app.bsky.video.uploadVideo` it will automatically get the short-lived service auth token required for those calls. It's currently only enabled on those two endpoints. I don't have a strong understanding of this and I'm not aware of a reference that lists other endpoints that need this behavior. I'm also not sure about which scenarios require using `app.bsky.video.uploadVideo` because `com.atproto.repo.uploadBlob` works for creating video posts.
+When the client calls `app.bsky.video.getUploadLimits` or `app.bsky.video.uploadVideo` it will automatically get and use the short-lived service auth token required for those calls. It's currently only enabled on those two endpoints. I don't have a deep understanding of this and I'm not aware of a reference that lists other endpoints that need this behavior. I'm also not sure about which scenarios require using `app.bsky.video.uploadVideo` because `com.atproto.repo.uploadBlob` works for creating video posts.
 
 See: https://docs.bsky.app/docs/advanced-guides/service-auth
 
@@ -474,8 +474,6 @@ Note that some of the tests will talk to the live API and are partly designed ar
 
 Pysky was developed with Python 3.13.0 on Ubuntu 24.04.1 but also tested on Windows 11/Python 3.10.4.
 
-How well the media features work on Linux may depend on how Python was built/installed and/or what underlying OS packages are installed. The video features depend on ffmpeg being present. Handling uncommon media formats or edge cases are likely outside the scope of this project.
+How well the media features work on Linux may depend on how Python was built/installed and/or what underlying OS packages are installed. The video features depend on ffmpeg being present. Detection of video stream types that are compatible with Bluesky is based on my obvservation and testing rather than any documentation I could find.
 
-As mentioned, the service auth functionality is enabled on only 2 endpoints.
-
-Detection of video stream types that are compatible with Bluesky is based on my obvservation and testing rather than any documentation I could find.
+Feel free to create issues here or ping me on Discord, I'm in the [Bluesky API Discord](https://discord.gg/3srmDsHSZJ), @ feder001.
