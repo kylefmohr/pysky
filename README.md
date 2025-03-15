@@ -8,9 +8,11 @@ A Bluesky API library focused on quality of life application-level features. A d
 * Simplified media upload:
     * Automatically resize images as needed to stay under the upload size limit
     * Automatically submit aspect ratio with images and videos
+    * Detect and raise an exception for incompatible videos before upload (not all videos with an .mp4 extension are compatible)
 * Simplified post/reply interface:
     * Specify links and images in post text as Markdown without needing to provide facets
     * Reply to posts without needing to provide post refs
+    * Send a video post in one call but wait for video processing to finish before posting (avoids post displaying "video not found" error until processing finishes)
 
 I created these features for my own projects with the goal of simplifying Bluesky integration at the application level and moved them into this project in case they could be useful to anyone else. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
 
@@ -102,8 +104,10 @@ post.add(pysky.Image(filename="./image4.png", alt="image 4 alt text"))
 bsky.create_post(post=post)
 
 
-# create a post with a video. note that this method blocks by default
-# until Bluesky finishes processing the video.
+# create a post with a video. note that while the underlying video upload
+# call is async, this method waits until Bluesky finishes processing the
+# video. calling bsky.post() for app.bsky.video.uploadVideo directly
+# will have the async behavior and return a jobStatus object.
 post = pysky.Post("Look at this video:")
 post.add(pysky.Video(filename="./video.mp4"))
 bsky.create_post(post=post)
