@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 PATH = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -57,3 +59,14 @@ def test_video_aspect_ratio():
     for vid, ar in expected_ar:
         v = Video(f"{PATH}/media/{vid}")
         assert v.get_aspect_ratio() == ar
+
+
+def test_reject_incompatible_videos():
+
+    from pysky import Video, IncompatibleMedia
+
+    bad_videos = ["bad-mp4-1.mp4", "bad-mp4-2.mp4"]
+
+    for vid in bad_videos:
+        with pytest.raises(IncompatibleMedia):
+            v = Video(f"{PATH}/media/{vid}")

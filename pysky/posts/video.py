@@ -5,7 +5,10 @@ import ffmpeg
 from pysky.logging import log
 from pysky.mimetype import guess_file_type
 
-ALLOWED_STREAM_BRAND_PREFIXES = ["mp4","qt"]
+ALLOWED_STREAM_BRAND_PREFIXES = ["mp4","qt","iso5","iso6","isom"]
+
+class IncompatibleMedia(Exception):
+    pass
 
 class Video:
 
@@ -15,7 +18,8 @@ class Video:
         self.upload_response = None
         self.mimetype = mimetype
         assert os.path.exists(filename)
-        assert self.is_compatible_format(), f"The file \"{self.filename}\" doesn't appear to be a format that's compatible with Bluesky"
+        if not self.is_compatible_format():
+            raise IncompatibleMedia(f"The file \"{self.filename}\" doesn't appear to be a format that's compatible with Bluesky")
 
 
     # to do - handle 409 already_exists - Video already processed
