@@ -46,9 +46,9 @@ I created these features for my own projects with the goal of simplifying Bluesk
 
 While there are wrappers that make some endpoints easier to call, `bsky.get` and `bsky.post` are intended to handle most use cases and can be wrapped by client code. Refer to the [official API docs](https://docs.bsky.app/docs/category/http-reference) for endpoint and parameter info. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
 
-The default hostname is "public.api.bsky.app" and can be used without authentication. While "bsky.social" was provided as the hostname for the POST example, the request was actually sent straight to the PDS host. See: [API Hosts and Auth](https://docs.bsky.app/docs/advanced-guides/api-directory#bluesky-services).
+The default hostname is "public.api.bsky.app" and can be used without authentication. While "bsky.social" was provided as the hostname for the POST example, the request was actually sent straight to the PDS host which is the behavior recommended by Bluesky. See: [API Hosts and Auth](https://docs.bsky.app/docs/advanced-guides/api-directory#bluesky-services).
 
-In this example, the client used credentials set as environment variables. Session creation and refresh is handled automatically and stored in the database.
+In this example, the client used credentials set as environment variables. Session creation and refresh is handled automatically and stored in the database. Your password is not stored in the database, only the access tokens and other metadata.
 
 More details about sessions and configuration are included in sections below.
 
@@ -102,7 +102,8 @@ post.add(pysky.Image(filename="./image4.png", alt="image 4 alt text"))
 bsky.create_post(post=post)
 
 
-# create a post with a video
+# create a post with a video. note that this method blocks by default
+# until Bluesky finishes processing the video.
 post = pysky.Post("Look at this video:")
 post.add(pysky.Video(filename="./video.mp4"))
 bsky.create_post(post=post)
@@ -251,7 +252,7 @@ If on the first (or any subsequent) use of the current session the API responds 
 
 If a request is made to the default public hostname `public.api.bsky.app` then the session headers, if a session has been established, are not sent in the request.
 
-It's safe to use the library with multiple accounts in one database, as sessions are scoped to a username.
+It's safe to use the library with multiple accounts in one database, as sessions and other records are scoped to an account.
 
 ## Database Logging
 
