@@ -1,77 +1,46 @@
 import os
-import time
-from itertools import count
-from types import SimpleNamespace
+
+import ffmpeg
 
 from pysky.logging import log
-from pysky.video import get_aspect_ratio
-from pysky.exceptions import ExcessiveIteration
 from pysky.mimetype import guess_file_type
 
+ALLOWED_STREAM_BRAND_PREFIXES = ["mp4","qt"]
 
 class Video:
 
-    def __init__(self, filename):
+    def __init__(self, filename, mimetype=None):
         self.filename = filename
         self.aspect_ratio = None
         self.upload_response = None
+        self.mimetype = mimetype
         assert os.path.exists(filename)
+        assert self.is_compatible_format(), f"The file \"{self.filename}\" doesn't appear to be a format that's compatible with Bluesky"
 
-    # note: block_until_processed=False won't work yet
-    # handle: 409 already_exists - Video already processed
-    def upload(self, bsky, mimetype=None, block_until_processed=True):
 
-        if not mimetype:
-            mimetype, _ = guess_file_type(self.filename)
+    # to do - handle 409 already_exists - Video already processed
+    def upload(self, bsky):
 
-        if not mimetype:
+        if not self.mimetype:
+            self.mimetype, _ = guess_file_type(self.filename)
+
+        if not self.mimetype:
             raise Exception(
                 "mimetype must be provided, or else a filename from which the mimetype can be guessed"
             )
 
-        video_data = open(self.filename, "rb").read()
+        data = open(self.filename, "rb").read()
 
-        params = {"did": bsky.did, "name": self.filename.split("/")[-1]}
+        self.upload_response = bsky.upload_blob(data, self.mimetype)
+        print(self.upload_response)
 
-        uploaded_blob = bsky.post(
-            params=params,
-            data=video_data,
-            endpoint="xrpc/app.bsky.video.uploadVideo",
-            headers={"Content-Type": mimetype},
-        )
-
-        processed_blob = None
-
-        for n in count():
-            r = bsky.get(endpoint="xrpc/app.bsky.video.getJobStatus", jobId=uploaded_blob.jobId)
-
-            if r.jobStatus.state == "JOB_STATE_COMPLETED":
-                processed_blob = r.jobStatus.blob
-                break
-            elif r.jobStatus.state == "JOB_STATE_FAILED":
-                raise Exception(
-                    f"error state in video processing: {r.jobStatus.state} (jobId {uploaded_blob.jobId})"
-                )
-            elif n > 500:
-                raise ExcessiveIteration(
-                    f"waited too long for video upload processing (jobId {uploaded_blob.jobId})"
-                )
-
-            time.sleep(2)
-
-        # only relevant after the processing is finished
         try:
-            if processed_blob:
-                self.aspect_ratio = get_aspect_ratio(self.filename)
+            self.aspect_ratio = self.get_aspect_ratio()
         except Exception as e:
-            log.error(f"can't get aspect ratio for {self.filename}: {e}")
+            log.warning(f"error finding image aspect ratio")
 
-        if processed_blob:
-            # push the blob struct one level down for
-            # consistency with the image upload response blob
-            self.upload_response = SimpleNamespace(blob=processed_blob)
-        else:
-            self.upload_response = uploaded_blob
+        return self.upload_response
+
 
     def as_dict(self):
 
@@ -95,3 +64,15 @@ class Video:
             video["aspectRatio"] = {"width": self.aspect_ratio[0], "height": self.aspect_ratio[1]}
 
         return video
+
+    def is_compatible_format(self):
+        probe = ffmpeg.probe(self.filename)
+        major_brand = probe["format"]["tags"]["major_brand"]
+        return any(major_brand.startswith(b) for b in ALLOWED_STREAM_BRAND_PREFIXES)
+
+
+    def get_aspect_ratio(self):
+        probe = ffmpeg.probe(self.filename)
+        video_streams = [s for s in probe["streams"] if s["codec_type"] == "video"]
+        stream = video_streams[0]
+        return (stream["width"], stream["height"])
