@@ -8,8 +8,8 @@ A Bluesky API library focused on quality of life application-level features. A d
 * Simplified media upload:
     * Automatically resize images as needed to stay under the upload size limit
     * Automatically submit aspect ratio with images and videos
-    * Detect and raise an exception for incompatible videos before upload (not all videos with an .mp4 extension are compatible)
-* Simplified post/reply interface:
+    * Detect and raise an exception for incompatible videos before upload (not all videos with an .mp4 extension are compatible with Bluesky)
+* Simplified post interface:
     * Specify links and images in post text as Markdown without needing to provide facets
     * Reply to posts without needing to provide post refs
     * Send a video post in one call but wait for video processing to finish before posting (avoids post displaying "video not found" error until processing finishes)
@@ -64,28 +64,30 @@ import pysky
 bsky = pysky.BskyClient()
 
 
-# simple post
+# Simple post
 bsky.create_post(text="Hello")
 
 
-# that was shorthand for using a Post object, which enables more features
+# That was shorthand for using a Post object, which enables more features
 bsky.create_post(post=pysky.Post("Hello"))
 
 
-# create a post with a link using markdown
+# Create a post with a link using markdown
 post = pysky.Post("Click [here](https://bsky.app/) to go to Bluesky")
 bsky.create_post(post=post)
 
 
-# you can also create a facet explicitly
+# You can also create a facet explicitly
 post = pysky.Post("Click here to go to Bluesky")
 facet = pysky.Facet(byteStart=6, byteEnd=10, uri="https://bsky.app/")
 post.add(facet)
 bsky.create_post(post=post)
 
 
-# create a post with 4 images using markdown. the images will be resized
+# Create a post with 4 images using markdown. the images will be resized
 # as needed to stay within the 976.56KB size limit.
+#
+# Put the images after the text to avoid weird/unspecified formatting.
 post = pysky.Post("""Look at these 4 images:
 ![image 1 alt text](./image1.png)
 ![image 2 alt text](./image2.png)
@@ -95,7 +97,7 @@ post = pysky.Post("""Look at these 4 images:
 bsky.create_post(post=post)
 
 
-# create a post with images explicitly
+# Create an image post without using markdown
 post = pysky.Post("Look at these 4 images:")
 post.add(pysky.Image(filename="./image1.png", alt="image 1 alt text"))
 post.add(pysky.Image(filename="./image2.png", alt="image 2 alt text"))
@@ -104,16 +106,17 @@ post.add(pysky.Image(filename="./image4.png", alt="image 4 alt text"))
 bsky.create_post(post=post)
 
 
-# create a post with a video. note that while the underlying video upload
+# Create a post with a video. Note that while the underlying video upload
 # call is async, this method waits until Bluesky finishes processing the
-# video. calling bsky.post() for app.bsky.video.uploadVideo directly
+# video. Calling bsky.post() for app.bsky.video.uploadVideo directly
 # will have the async behavior and return a jobStatus object.
 post = pysky.Post("Look at this video:")
 post.add(pysky.Video(filename="./video.mp4"))
 bsky.create_post(post=post)
 
 
-# create a post and give it a unique key that can be used to reply to it
+# Create a post and give it an optional unique key that can be used
+# to create replies to it
 posts = [
     pysky.Post("Original post", client_unique_key="readme-12345"),
     pysky.Post("Reply post", client_unique_key="readme-67890",
@@ -123,7 +126,7 @@ for post in posts:
     bsky.create_post(post=post)
 
 
-# reply to any other post by uri
+# Reply to any other post by uri
 post = pysky.Post("👍",
                   reply_uri="https://bsky.app/profile/bsky.app/post/3l6oveex3ii2l")
 bsky.create_post(post=post)
@@ -441,6 +444,12 @@ RateLimit-Reset: 1741030149
 RateLimit-Policy: 3000;w=300
 ```
 
+## Service Auth
+
+When the client calls `app.bsky.video.getUploadLimits` or `app.bsky.video.uploadVideo` it will automatically get the short-lived service auth token required for those calls. It's currently only enabled on those two endpoints. I don't have a strong understanding of this and I'm not aware of a reference that lists other endpoints that need this behavior. I'm also not sure about which scenarios require using `app.bsky.video.uploadVideo` because `com.atproto.repo.uploadBlob` works for creating video posts.
+
+See: https://docs.bsky.app/docs/advanced-guides/service-auth
+
 ## Installation / Setup
 
 1. Clone the repo, add it to PYTHONPATH, pip install -r requirements.txt
@@ -465,3 +474,7 @@ Note that some of the tests will talk to the live API and are partly designed ar
 Pysky was developed with Python 3.13.0 on Ubuntu 24.04.1 but also tested on Windows 11/Python 3.10.4.
 
 How well the media features work on Linux may depend on how Python was built/installed and/or what underlying OS packages are installed. The video features depend on ffmpeg being present. Handling uncommon media formats or edge cases are likely outside the scope of this project.
+
+As mentioned, the service auth functionality is enabled on only 2 endpoints.
+
+Detection of video stream types that are compatible with Bluesky is based on my obvservation and testing rather than any documentation I could find.
