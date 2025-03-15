@@ -305,6 +305,7 @@ class BskyClient:
             "repo": self.did,
             "collection": collection,
             "record": record,
+            "validate": True,
         }
         return self.post(
             hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.createRecord", params=params
