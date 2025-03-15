@@ -2,7 +2,7 @@
 A Bluesky API library focused on quality of life application-level features. A database backend is used to provide logging, caching, and persistence.
 
 * Automatic session caching/refreshing that persists across Python sessions
-* Cursor management - save the cursor returned from an endpoint that returns one (such as chat.bsky.convo.getLog) and automatically pass it to the next call, ensuring that all objects are returned and that each object is only returned once
+* Cursor management - save the cursor returned from endpoints that return large collections and automatically pass it to the next call
 * Database logging - metadata for all API calls and responses, including exceptions
 * Rate limit monitoring
 * Simplified media upload:
