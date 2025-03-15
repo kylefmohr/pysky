@@ -84,6 +84,8 @@ class BskyClient:
 
     def call_with_session_refresh(self, method, uri, args):
 
+        args["headers"].update({"User-Agent": "pysky - python bluesky library"})
+
         time_start = time()
         r = method(uri, **args)
         time_end = time()
@@ -187,7 +189,7 @@ class BskyClient:
         params.update(kwargs)
 
         service_auth_token = (
-            self.get_service_auth(service_endpoint=endpoint)
+            self.get_service_auth(endpoint)
             if endpoint in SERVICE_AUTH_ENDPOINTS
             else None
         )
@@ -455,12 +457,10 @@ class BskyClient:
             user.save()
             return user
 
-    def get_service_auth(self, lxm=None, aud=None, exp=None, service_endpoint=None):
+    def get_service_auth(self, service_endpoint, lxm=None, aud=None, exp=None):
 
-        if service_endpoint:
-            lxm, aud_func = SERVICE_AUTH_ENDPOINTS[service_endpoint]
-            aud = aud_func(self)
-
+        lxm, aud_func = SERVICE_AUTH_ENDPOINTS[service_endpoint]
+        aud = aud_func(self)
         endpoint = "xrpc/com.atproto.server.getServiceAuth"
         response = self.get(
             hostname=HOSTNAME_ENTRYWAY, endpoint=endpoint, lxm=lxm, aud=aud, exp=exp
