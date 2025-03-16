@@ -75,9 +75,10 @@ class Post:
             self.add_image(img, self.strict)
 
     def upload_files(self, bsky):
-        for uploadable_file in self.images + self.videos:
-            if not uploaded(uploadable_file):
-                uploadable_file.upload(bsky)
+        uploadable_objects = self.images + self.videos + [self.external]
+        for uploadable_obj in uploadable_objects:
+            if uploadable_obj and not uploaded(uploadable_obj):
+                uploadable_obj.upload(bsky)
 
     def as_dict(self):
 
