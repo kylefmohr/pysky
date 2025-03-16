@@ -115,6 +115,20 @@ post = pysky.Post("Look at this video:")
 post.add(pysky.Video(filename="./video.mp4"))
 bsky.create_post(post=post)
 
+# Create a post with an external site card embed
+post = pysky.Post("Here's a link:")
+external = External(
+    uri="https://worldwithoutcaesars.com/",
+    title="MUNDUS SINE CAESARIBUS — A WORLD WITHOUT CAESARS",
+    description="Support an open internet."
+)
+r = requests.get("https://caesars-iu8i.onrender.com/og.png")
+image = Image(data=r.content, mimetype=r.headers['Content-Type'])
+external.add_image(image)
+post.add_external(external)
+bsky.create_post(post=post)
+
+
 
 # Create a post and give it an optional unique key that can
 # be used to create replies
