@@ -3,7 +3,7 @@ A Bluesky API library focused on quality of life application-level features. A d
 
 Features:
 * Automatic session caching/refreshing that persists across Python sessions
-* Cursor management - save the cursor returned from endpoints that return large collections and automatically pass it to the next call
+* Cursor management - save the cursor returned from an endpoint that returns a large collection and automatically pass it to the next call
 * Database logging - metadata for all API calls and responses, including exceptions
 * Rate limit monitoring
 * Simplified media upload:
@@ -15,7 +15,7 @@ Features:
     * Reply to posts without needing to provide post refs
     * Send a video post in one call but wait for video processing to finish before posting (avoids post displaying "video not found" error until processing finishes)
 
-I created these features for my own projects with the goal of simplifying Bluesky integration at the application level and moved them into this project in case they could be useful to anyone else. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
+I created these features for my own projects with the goal of simplifying Bluesky integration at the application level and moved them into this library in case they could be useful to anyone else. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
 
 ## Usage
 
@@ -116,8 +116,8 @@ post.add(pysky.Video(filename="./video.mp4"))
 bsky.create_post(post=post)
 
 
-# Create a post and give it an optional unique key that can be used
-# to create replies to it
+# Create a post and give it an optional unique key that can
+# be used to create replies
 posts = [
     pysky.Post("Original post", client_unique_key="readme-12345"),
     pysky.Post("Reply post", client_unique_key="readme-67890",
@@ -162,8 +162,6 @@ An example of creating a post with the lower-level API:
 >>> profile.handle
 'craigweekend.bsky.social'
 
-# the params dict is what's passed through to the API,
-# but its elements can also be passed to get() as kwargs:
 >>> profile = bsky.get(endpoint="xrpc/app.bsky.actor.getProfile",
 ...                    actor="craigweekend.bsky.social")
 >>> profile.displayName
@@ -196,13 +194,9 @@ Out[4]: 17
 
 Note the distinction that repo, collection, and limit are parameters to be passed to the endpoint, whereas hostname and endpoint are used by the library to make the request.
 
-If an argument is passed in both places, the kwargs value takes precedence.
-
-The library will handle passing these values as a query string to a GET request and as a json body to a POST request.
-
 ## POST Examples:
 
-Binary data (e.g. image uploads) should be passed as the `data` argument to `BskyClient.post()`.
+Binary data should be passed as the `data` argument to `BskyClient.post()`.
 
 ```python
 data = open("image.png", "rb").read()
@@ -215,7 +209,7 @@ response = bsky.post(data=data,
 
 However, this is done for you if using the `Image` and `Post` classes as shown in the "Creating Posts" section above.
 
-There's an `upload_blob()` wrapper method for this:
+There's also an `upload_blob()` wrapper method for this:
 
 ```python
 response = bsky.upload_blob(data=data, mimetype="image/png")
@@ -223,9 +217,7 @@ response = bsky.upload_blob(data=data, mimetype="image/png")
 
 ## Responses
 
-The response from `bsky.get()` and `bsky.post()` is the JSON response from Bluesky converted to a [SimpleNamespace](https://docs.python.org/3/library/types.html#types.SimpleNamespace) object. This is for the convenience of accessing attributes with dot notation rather than dict lookups.
-
-The response is otherwise unmodified, so refer to the [API docs](https://docs.bsky.app/docs/category/http-reference) for the response schema of a given call.
+The response from `bsky.get()` and `bsky.post()` is the JSON response from Bluesky converted to a [SimpleNamespace](https://docs.python.org/3/library/types.html#types.SimpleNamespace) object. Refer to the [API docs](https://docs.bsky.app/docs/category/http-reference) for the response schema of a given call.
 
 An `http` attribute is added to the response with these fields from the http response object: headers, status_code, elapsed, url.
 
@@ -246,9 +238,6 @@ RateLimit-Limit: 3000
 RateLimit-Remaining: 2999
 RateLimit-Reset: 1741030149
 RateLimit-Policy: 3000;w=300
-atproto-repo-rev: 3ljiobrli672t
-atproto-content-labelers: did:plc:ar7c4by46qjdydhdevvrndac;redact
-Vary: Accept-Encoding
 ```
 
 
