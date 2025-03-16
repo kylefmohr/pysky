@@ -465,4 +465,4 @@ Pysky was developed with Python 3.13.0 on Ubuntu 24.04.1 but also tested on Wind
 
 How well the media features work on Linux may depend on how Python was built/installed and/or what underlying OS packages are installed. The video features depend on ffmpeg being present. Detection of video stream types that are compatible with Bluesky is based on my obvservation and testing rather than any documentation I could find.
 
-Feel free to create issues here or ping me on Discord, I'm in the [Bluesky API Discord](https://discord.gg/3srmDsHSZJ), @ feder001.
+Feel free to create issues here or ping me on [Discord](https://discord.gg/3srmDsHSZJ), @ feder001.
