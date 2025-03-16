@@ -115,6 +115,7 @@ post = pysky.Post("Look at this video:")
 post.add(pysky.Video(filename="./video.mp4"))
 bsky.create_post(post=post)
 
+
 # Create a post with an external site card embed
 post = pysky.Post("Here's a link:")
 external = External(
