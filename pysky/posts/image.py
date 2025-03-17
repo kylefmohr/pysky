@@ -16,9 +16,7 @@ MAX_ALLOWED_IMAGE_SIZE = math.floor(976.56 * 1024)
 
 class Image:
 
-    def __init__(
-        self, filename=None, data=None, extension=None, mimetype=None, alt=None, strict=True
-    ):
+    def __init__(self, filename=None, data=None, extension=None, mimetype=None, alt=None):
         self.filename = filename
         self.data = data
         self.extension = extension
@@ -26,11 +24,10 @@ class Image:
         self.alt = alt
         self.aspect_ratio = None
         self.upload_response = None
-        if filename and strict:
+        if filename:
             assert os.path.exists(
                 filename
             ), f"tried to create image object for files that does not exist: {filename}"
-
 
     @property
     def size(self):
@@ -41,7 +38,6 @@ class Image:
         if not self.data:
             self.data = open(self.filename, "rb").read()
         return self.data
-
 
     def upload(self, bsky, allow_resize=True):
 
@@ -67,6 +63,7 @@ class Image:
         try:
             self.aspect_ratio = self.get_aspect_ratio()
         except Exception as e:
+            self.aspect_ratio = None
             log.warning(f"error finding image aspect ratio")
 
         return self.upload_response
@@ -90,13 +87,13 @@ class Image:
         }
 
         if isinstance(self.aspect_ratio, tuple):
-            image["aspectRatio"] = {"width": self.aspect_ratio[0], "height": self.aspect_ratio[1]}
+            image["aspectRatio"] = self.aspect_ratio
 
         return image
 
     def get_aspect_ratio(self):
-        return PILImage.open(io.BytesIO(self.image_data)).size
-
+        ar = PILImage.open(io.BytesIO(self.image_data)).size
+        return {"width": ar[0], "height": ar[1]}
 
     def ensure_resized_image(self):
 
@@ -105,7 +102,6 @@ class Image:
             return True, original_dimensions, new_dimensions
 
         return False, None, None
-
 
     def resize_image(self):
 

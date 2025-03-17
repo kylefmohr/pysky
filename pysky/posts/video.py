@@ -88,6 +88,7 @@ class Video:
             if processed_blob:
                 self.aspect_ratio = self.get_aspect_ratio()
         except Exception as e:
+            self.aspect_ratio = None
             log.error(f"can't get aspect ratio for {self.filename}: {e}")
 
         if processed_blob:
@@ -116,10 +117,7 @@ class Video:
         }
 
         if isinstance(self.aspect_ratio, tuple):
-            video["aspectRatio"] = {
-                "width": self.aspect_ratio[0],
-                "height": self.aspect_ratio[1],
-            }
+            video["aspectRatio"] = self.aspect_ratio
 
         return video
 
@@ -132,4 +130,4 @@ class Video:
         probe = ffmpeg.probe(self.filename)
         video_streams = [s for s in probe["streams"] if s["codec_type"] == "video"]
         stream = video_streams[0]
-        return (stream["width"], stream["height"])
+        return {"width": stream["width"], "height": stream["height"]}
