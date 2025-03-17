@@ -13,13 +13,13 @@ Features:
 * Simplified post interface:
     * Specify links and images in post text as Markdown without needing to provide facets
     * Reply to posts without needing to provide post refs
-    * Send a video post in one call but wait for video processing to finish before posting (avoids post displaying "video not found" error until processing finishes)
+    * Wait for a post's video processing to finish before submitting the post (otherwise it would display an error)
 
-I created these features for my own projects with the goal of simplifying Bluesky integration at the application level and moved them into this library in case they could be useful to anyone else. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
+I created these features for my own projects with the goal of simplifying Bluesky integration and moved them into this library in case they could be useful to anyone else. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
 
 ## Usage
 
-### Basic Usage
+### Basic GET and POST
 
 ```python
 >>> import pysky
@@ -47,7 +47,7 @@ I created these features for my own projects with the goal of simplifying Bluesk
     )
 ```
 
-While there are wrappers that make some endpoints easier to call, `bsky.get` and `bsky.post` are intended to handle most use cases and can be wrapped by client code. Refer to the [official API docs](https://docs.bsky.app/docs/category/http-reference) for endpoint and parameter info. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
+While there are wrapper methods that make some endpoints easier to call, `bsky.get` and `bsky.post` are intended to handle most use cases and can be wrapped by client code. Refer to the [official API docs](https://docs.bsky.app/docs/category/http-reference) for endpoint and parameter info. Parameter names will be passed through to the API, so the right form and capitalization must be provided.
 
 The default hostname is "public.api.bsky.app" and can be used without authentication. While "bsky.social" was provided as the hostname for the POST example, the request was actually sent straight to the PDS host which is the behavior recommended by Bluesky. See: [API Hosts and Auth](https://docs.bsky.app/docs/advanced-guides/api-directory#bluesky-services).
 
@@ -57,7 +57,7 @@ More details about sessions and configuration are included in sections below.
 
 ### Creating Posts
 
-A simple API for creating posts is provided for convenience, but it could also be done through the `bsky.post` method as shown above.
+A simple API for creating posts is provided for convenience, but it could also be done fully through the `bsky.post` method as shown above.
 
 ```python
 import pysky
@@ -258,11 +258,11 @@ RateLimit-Policy: 3000;w=300
 
 ## Session Management
 
-Upon the first attempted request to a hostname other than the public `public.api.bsky.app`, the database is checked for the most recent cached session (an accessJwt/refreshJwt pair) in the table `bsky_session` for the same `BSKY_AUTH_USERNAME`. If none exist and the `BSKY_AUTH_USERNAME/BSKY_AUTH_PASSWORD` environment variables are set, a session is established and saved to the table. If the credentials aren't set, a `pysky.NotAuthenticated` exception will be raised.
+When a non-public endpoint is called the database is checked for the most recent cached session for the configured account in the table `bsky_session`. If none exist and credentials are set, (see "Installation / Setup" below) a session is created and saved to the table. If credentials aren't set, a `pysky.NotAuthenticated` exception will be raised.
 
-If on the first (or any subsequent) use of the current session the API responds with an `ExpiredToken` error, a new session is established and saved to `bsky_session`. The API call that was interrupted by the expiration is automatically repeated with the new session.
+If the API responds with an `ExpiredToken` error for the current session, it's refreshed and saved back to the database. The API call that was interrupted is automatically repeated with the new session.
 
-If a request is made to the default public hostname `public.api.bsky.app` then the session headers, if a session has been established, are not sent in the request.
+If a request is made to the default public hostname `public.api.bsky.app` then the current session headers are not sent in the request.
 
 It's safe to use the library with multiple accounts in one database, as sessions and other records are scoped to an account.
 
@@ -359,7 +359,7 @@ RateLimit-Policy: 3000;w=300
 
 ## Service Auth
 
-When the client calls `app.bsky.video.getUploadLimits` or `app.bsky.video.uploadVideo` it will automatically get and use the short-lived service auth token required for those calls. It's currently only enabled on those two endpoints. I don't have a deep understanding of this and I'm not aware of a reference that lists other endpoints that need this behavior. I'm also not sure about which scenarios require using `app.bsky.video.uploadVideo` because `com.atproto.repo.uploadBlob` works for creating video posts.
+When the client calls `app.bsky.video.getUploadLimits` or `app.bsky.video.uploadVideo` it will automatically get and use the short-lived service auth token required for those calls. It's currently only enabled on those two endpoints. I'm not aware of a reference that lists all endpoints that need this behavior.
 
 See: https://docs.bsky.app/docs/advanced-guides/service-auth
 
