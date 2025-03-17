@@ -51,7 +51,7 @@ While there are wrapper methods that make some endpoints easier to call, `bsky.g
 
 The default hostname is "public.api.bsky.app" and can be used without authentication. While "bsky.social" was provided as the hostname for the POST example, the request was actually sent straight to the PDS host which is the behavior recommended by Bluesky. See: [API Hosts and Auth](https://docs.bsky.app/docs/advanced-guides/api-directory#bluesky-services).
 
-In this example, the client used credentials set as environment variables. Session creation and refresh is handled automatically and stored in the database. Your password is not stored in the database, only the access tokens and other metadata.
+In this example, the client used credentials set as environment variables. Session creation and refresh is handled automatically and stored in the database. Passwords are not stored in the database, only the access tokens and other metadata.
 
 More details about sessions and configuration are included in sections below.
 
@@ -128,7 +128,6 @@ image = Image(data=r.content, mimetype=r.headers['Content-Type'])
 external.add_image(image)
 post.add_external(external)
 bsky.create_post(post=post)
-
 
 
 # Create a post and give it an optional unique key that can
@@ -209,7 +208,7 @@ Out[4]: 17
 
 Note the distinction that repo, collection, and limit are parameters to be passed to the endpoint, whereas hostname and endpoint are used by the library to make the request.
 
-## POST Examples:
+## Uploading Data:
 
 Binary data should be passed as the `data` argument to `BskyClient.post()`.
 
