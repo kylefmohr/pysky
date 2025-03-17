@@ -12,11 +12,12 @@ from pysky.mimetype import guess_file_type
 from pysky.exceptions import APIError
 
 
-ALLOWED_STREAM_BRAND_PREFIXES = ["mp4","qt","iso5","iso6","isom"]
+ALLOWED_STREAM_BRAND_PREFIXES = ["mp4", "qt", "iso5", "iso6", "isom"]
 
 
 class IncompatibleMedia(Exception):
     pass
+
 
 class Video:
 
@@ -27,8 +28,9 @@ class Video:
         self.mimetype = mimetype
         assert os.path.exists(filename)
         if not self.is_compatible_format():
-            raise IncompatibleMedia(f"The file \"{self.filename}\" doesn't appear to be a format that's compatible with Bluesky")
-
+            raise IncompatibleMedia(
+                f"The file \"{self.filename}\" doesn't appear to be a format that's compatible with Bluesky"
+            )
 
     def upload(self, bsky):
 
@@ -63,7 +65,9 @@ class Video:
         processed_blob = None
 
         for n in count():
-            r = bsky.get(endpoint="xrpc/app.bsky.video.getJobStatus", jobId=uploaded_blob.jobId)
+            r = bsky.get(
+                endpoint="xrpc/app.bsky.video.getJobStatus", jobId=uploaded_blob.jobId
+            )
 
             if r.jobStatus.state == "JOB_STATE_COMPLETED":
                 processed_blob = r.jobStatus.blob
@@ -95,7 +99,6 @@ class Video:
 
         return self.upload_response
 
-
     def as_dict(self):
 
         assert self.upload_response and hasattr(
@@ -104,7 +107,10 @@ class Video:
 
         video = {
             "$type": "app.bsky.embed.video",
-            "aspectRatio": {"width": self.aspect_ratio[0], "height": self.aspect_ratio[1]},
+            "aspectRatio": {
+                "width": self.aspect_ratio[0],
+                "height": self.aspect_ratio[1],
+            },
             "video": {
                 "$type": "blob",
                 "ref": {"$link": getattr(self.upload_response.blob.ref, "$link")},
@@ -114,7 +120,10 @@ class Video:
         }
 
         if isinstance(self.aspect_ratio, tuple):
-            video["aspectRatio"] = {"width": self.aspect_ratio[0], "height": self.aspect_ratio[1]}
+            video["aspectRatio"] = {
+                "width": self.aspect_ratio[0],
+                "height": self.aspect_ratio[1],
+            }
 
         return video
 
@@ -122,7 +131,6 @@ class Video:
         probe = ffmpeg.probe(self.filename)
         major_brand = probe["format"]["tags"]["major_brand"]
         return any(major_brand.startswith(b) for b in ALLOWED_STREAM_BRAND_PREFIXES)
-
 
     def get_aspect_ratio(self):
         probe = ffmpeg.probe(self.filename)
