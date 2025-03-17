@@ -107,10 +107,6 @@ class Video:
 
         video = {
             "$type": "app.bsky.embed.video",
-            "aspectRatio": {
-                "width": self.aspect_ratio[0],
-                "height": self.aspect_ratio[1],
-            },
             "video": {
                 "$type": "blob",
                 "ref": {"$link": getattr(self.upload_response.blob.ref, "$link")},
