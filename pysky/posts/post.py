@@ -23,7 +23,6 @@ class Post:
         reply_client_unique_key=None,
         reply_uri=None,
         convert_markdown=True,
-        strict=True,
     ):
         self.text = text or ""
         self.facets = []
@@ -34,7 +33,6 @@ class Post:
         self.reply_uri = reply_uri
         self.client_unique_key = client_unique_key
         self.reply_client_unique_key = reply_client_unique_key
-        self.strict = strict
         if convert_markdown:
             self.convert_markdown_text()
 
@@ -72,7 +70,7 @@ class Post:
 
     def add_images(self, images):
         for img in images:
-            self.add_image(img, self.strict)
+            self.add_image(img)
 
     def upload_files(self, bsky):
         uploadable_objects = self.images + self.videos + [self.external]
@@ -144,7 +142,7 @@ class Post:
                     src = child.attrs.get("src")
                     alt = child.attrs.get("alt")
                     if src:
-                        self.add_image(Image(src, alt=(alt or ""), strict=self.strict))
+                        self.add_image(Image(src, alt=(alt or "")))
                 elif isinstance(child, bs4.element.Tag) and child.name in ["em","strong","i","b"]:
                     text += child.text.encode("utf-8")
 

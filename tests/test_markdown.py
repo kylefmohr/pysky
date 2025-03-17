@@ -1,4 +1,4 @@
-
+import os
 
 def test_markdown_empty():
 
@@ -42,7 +42,7 @@ def test_markdown_facet():
 
     from pysky.posts.post import Post
 
-    p = Post("[aaa](https://bsky.app/)", strict=False)
+    p = Post("[aaa](https://bsky.app/)")
     assert len(p.facets) == 1
     assert p.facets[0].uri == "https://bsky.app/"
     assert p.facets[0].byteStart == 0
@@ -57,7 +57,7 @@ def test_markdown_multiple_facets():
     p = Post("""[aaa](https://bsky.app/)
 
 bbb [bbb](bsky.app/search) bbb
-""", strict=False)
+""")
     assert len(p.facets) == 2
     assert p.facets[0].uri == "https://bsky.app/"
     assert p.facets[0].byteStart == 0
@@ -73,9 +73,13 @@ def test_markdown_image():
 
     from pysky.posts.post import Post
 
-    p = Post("![aaa](./images/bbb.png)", strict=False)
-    assert len(p.images) == 1
-    assert p.images[0].filename == "./images/bbb.png"
+    PATH = os.path.dirname(os.path.abspath(__file__))
+
+    p = Post(f"""![image 1]({PATH}/media/image1.png)
+                 ![image 2]({PATH}/media/image2.png)""")
+    assert len(p.images) == 2
+    assert p.images[0].filename == f"{PATH}/media/image1.png"
+    assert p.images[1].filename == f"{PATH}/media/image2.png"
     assert p.text == ""
 
 
