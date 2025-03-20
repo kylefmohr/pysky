@@ -13,7 +13,7 @@ from pysky.session import Session
 from pysky.models import BaseModel, BskySession, BskyUserProfile, APICallLog, BskyPost
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
-from pysky.exceptions import RefreshSessionRecursion, APIError, NotAuthenticated
+from pysky.exceptions import APIError, NotAuthenticated
 from pysky.decorators import process_cursor, ZERO_CURSOR
 from pysky.constants import (
     HOSTNAME_PUBLIC,
@@ -255,10 +255,6 @@ class BskyClient:
 
             call_exception = None
         except Exception as e:
-
-            if isinstance(e, RefreshSessionRecursion):
-                raise
-
             r = None
             apilog.exception_class = e.__class__.__name__
             apilog.exception_text = str(e)

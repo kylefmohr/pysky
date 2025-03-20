@@ -1,7 +1,3 @@
-class RefreshSessionRecursion(Exception):
-    pass
-
-
 class APIError(Exception):
 
     def __init__(self, message, apilog):

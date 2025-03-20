@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pysky.logging import log
 from pysky.models import BskySession
-from pysky.exceptions import RefreshSessionRecursion, APIError, NotAuthenticated
+from pysky.exceptions import APIError, NotAuthenticated
 from pysky.constants import HOSTNAME_ENTRYWAY, AUTH_METHOD_PASSWORD
 
 SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
@@ -104,12 +104,6 @@ class Session:
         return self.set_auth_header()
 
     def refresh(self, client):
-        # i can't reproduce it, but once i saw a "maximum recursion depth exceeded"
-        # exception here. i added this code to check for it.
-        if [f.function for f in inspect.stack()].count("refresh") > 1:
-            raise RefreshSessionRecursion(
-                f"session.refresh() recursion: {','.join(f.function for f in inspect.stack())}"
-            )
         self.create(client, method=SESSION_METHOD_REFRESH)
 
     def serialize(self):
