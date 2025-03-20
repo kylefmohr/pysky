@@ -13,14 +13,21 @@ SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
 class Session:
 
     def __init__(
-        self, ignore_cached_session=False, bsky_auth_username=None, bsky_auth_password=None
+        self,
+        ignore_cached_session=False,
+        bsky_auth_username=None,
+        bsky_auth_password=None,
     ):
         self.auth_header = {}
         self.ignore_cached_session = ignore_cached_session
 
         try:
-            self.bsky_auth_username = bsky_auth_username or os.environ["BSKY_AUTH_USERNAME"]
-            self.bsky_auth_password = bsky_auth_password or os.environ["BSKY_AUTH_PASSWORD"]
+            self.bsky_auth_username = (
+                bsky_auth_username or os.environ["BSKY_AUTH_USERNAME"]
+            )
+            self.bsky_auth_password = (
+                bsky_auth_password or os.environ["BSKY_AUTH_PASSWORD"]
+            )
         except KeyError:
             self.bsky_auth_username = ""
             self.bsky_auth_password = ""
@@ -33,7 +40,11 @@ class Session:
     @staticmethod
     def is_revoked_token_response(r):
         # {"error":"ExpiredToken","message":"Token has been revoked"}
-        return r.status_code == 400 and r.json()["error"] == "ExpiredToken" and r.json()["message"] = "Token has been revoked"
+        return (
+            r.status_code == 400
+            and r.json()["error"] == "ExpiredToken"
+            and r.json()["message"] == "Token has been revoked"
+        )
 
     def get_did(self, client):
         try:
@@ -86,7 +97,9 @@ class Session:
         self.did = session.did
         self.create_method = method
         self.created_at = datetime.now().isoformat()
-        self.pds_service_endpoint = [s for s in session.didDoc.service if s.id == "#atproto_pds"][0].serviceEndpoint
+        self.pds_service_endpoint = [
+            s for s in session.didDoc.service if s.id == "#atproto_pds"
+        ][0].serviceEndpoint
         self.serialize()
         return self.set_auth_header()
 
@@ -106,7 +119,9 @@ class Session:
         bs.save()
 
     def load_serialized(self):
-        assert self.bsky_auth_username, "no bsky_auth_username when checking for cached session"
+        assert (
+            self.bsky_auth_username
+        ), "no bsky_auth_username when checking for cached session"
         try:
             db_session = (
                 BskySession.select()
