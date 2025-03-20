@@ -91,8 +91,17 @@ class BskyClient:
         time_end = time()
         session_was_refreshed = False
 
-        if Session.is_expired_token_response(r):
+        session_revoked = Session.is_revoked_token_response(r)
+        session_expired = Session.is_expired_token_response(r)
+
+        if session_revoked:
+            log.info("session revoked, creating a new one")
+            self.session.create(self)
+        elif session_expired:
+            log.info("session expired, refreshing the existing one")
             self.session.refresh(self)
+
+        if session_revoked or session_expired:
             args["headers"].update(self.auth_header)
             time_start = time()
             r = method(uri, **args)
