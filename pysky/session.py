@@ -27,7 +27,13 @@ class Session:
 
     @staticmethod
     def is_expired_token_response(r):
+        # {"error":"ExpiredToken","message":"Token has expired"}
         return r.status_code == 400 and r.json()["error"] == "ExpiredToken"
+
+    @staticmethod
+    def is_revoked_token_response(r):
+        # {"error":"ExpiredToken","message":"Token has been revoked"}
+        return r.status_code == 400 and r.json()["error"] == "ExpiredToken" and r.json()["message"] = "Token has been revoked"
 
     def get_did(self, client):
         try:
