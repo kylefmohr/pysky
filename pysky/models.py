@@ -40,6 +40,7 @@ class BskyUserProfile(BaseModel):
     labels = CharField(null=True)
     description = CharField(null=True)
     createdAt = DateTimeField(null=True, column_name="createdAt")
+    updatedAt = DateTimeField(null=True, column_name="updatedAt")
     associated_lists = IntegerField(null=True)
     associated_feedgens = IntegerField(null=True)
     associated_starterPacks = IntegerField(null=True, column_name="associated_starterPacks")

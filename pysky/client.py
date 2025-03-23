@@ -465,6 +465,7 @@ class BskyClient:
                     setattr(user, f"viewer_{f}", getattr(response.viewer, f, None))
 
             user.labels = ",".join(l.val for l in getattr(response, "labels", []))
+            user.updatedAt = datetime.now(timezone.utc)
             user.save()
             return user
 
