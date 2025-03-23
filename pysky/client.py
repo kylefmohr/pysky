@@ -409,6 +409,11 @@ class BskyClient:
             hostname=HOSTNAME_CHAT, endpoint=endpoint, params={"cursor": cursor}, **kwargs
         )
 
+    @staticmethod
+    def get_user_profile_static(actor):
+        bsky = BskyClient()
+        bsky.get_user_profile(actor)
+
     def get_user_profile(self, actor, force_remote_call=False):
         """Either a user handle or DID can be passed to this method. Handle
         should not include the @ symbol, but it will be stripped if passed."""
