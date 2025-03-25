@@ -1,7 +1,7 @@
 import re
 import json
 import inspect
-from time import time
+from time import time, sleep
 from types import SimpleNamespace
 from datetime import datetime, timezone
 
@@ -82,12 +82,23 @@ class BskyClient:
     def pds_service_hostname(self):
         return self.pds_service_endpoint.split("/")[-1] if self.pds_service_endpoint else None
 
+    def call_with_dns_retry(self, method, uri, args):
+        try:
+            return method(uri, **args)
+        except requests.exceptions.ConnectionError as e:
+            if "Temporary failure in name resolution" in str(e):
+                log.warning(f"caught temporary dns error: {e}, retrying")
+                sleep(5)
+                r = method(uri, **args)
+                log.warning(f"recovered from temporary dns error: {r.status_code}")
+                return r
+
     def call_with_session_refresh(self, method, uri, args):
 
         args["headers"].update({"User-Agent": "pysky - python bluesky library"})
 
         time_start = time()
-        r = method(uri, **args)
+        r = self.call_with_dns_retry(method, uri, args)
         time_end = time()
         session_was_refreshed = False
 
@@ -104,7 +115,7 @@ class BskyClient:
         if session_revoked or session_expired:
             args["headers"].update(self.auth_header)
             time_start = time()
-            r = method(uri, **args)
+            r = self.call_with_dns_retry(method, uri, args)
             time_end = time()
             session_was_refreshed = True
 
