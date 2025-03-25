@@ -412,7 +412,13 @@ class BskyClient:
     @staticmethod
     def get_user_profile_static(actor):
         bsky = BskyClient()
-        bsky.get_user_profile(actor)
+        ignore_error_tokens = ["AccountDeactivated","AccountTakedown","InvalidRequest"]
+        try:
+            bsky.get_user_profile(actor)
+        except APIError as e:
+            log.info(f"e.message: {e.message}")
+            if not any(t in e.message for t in ignore_error_tokens):
+                raise
 
     def get_user_profile(self, actor, force_remote_call=False):
         """Either a user handle or DID can be passed to this method. Handle
@@ -437,6 +443,7 @@ class BskyClient:
                 user.handle = user.handle or actor
                 user.did = user.did or actor
                 user.error = e.message
+                user.updatedAt = datetime.now(timezone.utc)
                 user.save()
                 raise
             user = BskyUserProfile.get_or_none(did=response.did)
