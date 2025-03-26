@@ -11,3 +11,7 @@ class NotAuthenticated(Exception):
 
 class ExcessiveIteration(Exception):
     pass
+
+
+class UploadException(Exception):
+    pass
