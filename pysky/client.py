@@ -13,7 +13,7 @@ from pysky.session import Session
 from pysky.models import BaseModel, BskySession, BskyUserProfile, APICallLog, BskyPost
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
-from pysky.exceptions import APIError, NotAuthenticated
+from pysky.exceptions import APIError, NotAuthenticated, UploadException
 from pysky.decorators import process_cursor, ZERO_CURSOR
 from pysky.constants import (
     HOSTNAME_PUBLIC,
@@ -336,7 +336,10 @@ class BskyClient:
                 "createdAt": datetime.now(timezone.utc).isoformat(),
             }
         else:
-            post.upload_files(self)
+            try:
+                post.upload_files(self)
+            except Exception as e:
+                raise UploadException(f"UploadException: {e}")
             post_dict = post.as_dict()
 
         response = self.create_record("app.bsky.feed.post", post_dict)
