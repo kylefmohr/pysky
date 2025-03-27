@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from peewee import Model, IntegerField, ForeignKeyField, BooleanField
 
@@ -52,6 +52,36 @@ class BskyUserProfile(BaseModel):
 
     class Meta:
         table_name = "bsky_user_profile"
+
+    @staticmethod
+    def fix_created_date(lookup_expression):
+        """
+        Some accounts report a createdAt in the BCE era which peewee can safely
+        insert into postgresql but can't later retrieve and hydrate. So this
+        method changes those invalid dates to another valid placeholder date.
+        """
+        placeholder_date = datetime(1800, 1, 1).astimezone(timezone.utc).strftime("%Y-%m-%d 00:00:00")
+        update = BskyUserProfile.update(createdAt=placeholder_date).where(lookup_expression)
+        updated_rows = update.execute()
+        if updated_rows != 1:
+            raise Exception(f"fix_created_date({actor}, {field}) updated {updated_rows} rows, expected 1")
+
+    @staticmethod
+    def get_by_actor(actor):
+        """
+        Look up a profile by either did or handle, correcting an invalid
+        createdAt date if that exception is encountered.
+        """
+        lookup_field = "did" if actor.startswith("did:") else "handle"
+        lookup_field = getattr(BskyUserProfile, lookup_field)
+        lookup_expression = lookup_field == actor
+
+        try:
+            return BskyUserProfile.get(lookup_expression)
+        except ValueError as e:
+            if "year -1 is out of range" in e.args[0]:
+                BskyUserProfile.fix_created_date(lookup_expression)
+                return BskyUserProfile.get(lookup_expression)
 
 
 class APICallLog(BaseModel):
