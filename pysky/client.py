@@ -440,10 +440,7 @@ class BskyClient:
         actor = re.sub(r"^@", "", actor)
         try:
             assert force_remote_call == False
-            if actor.startswith("did:"):
-                return BskyUserProfile.get(BskyUserProfile.did == actor)
-            else:
-                return BskyUserProfile.get(BskyUserProfile.handle == actor)
+            return BskyUserProfile.get_by_actor(actor)
         except (BskyUserProfile.DoesNotExist, AssertionError):
             endpoint = "xrpc/app.bsky.actor.getProfile"
             try:
@@ -487,6 +484,10 @@ class BskyClient:
 
             user.labels = ",".join(l.val for l in getattr(response, "labels", []))
             user.updatedAt = datetime.now(timezone.utc)
+
+            if "0001-01-01" in user.createdAt:
+                user.createdAt = datetime(1800, 1, 1).astimezone(timezone.utc).strftime("%Y-%m-%d 00:00:00")
+
             user.save()
             return user
 
