@@ -60,11 +60,15 @@ class BskyUserProfile(BaseModel):
         insert into postgresql but can't later retrieve and hydrate. So this
         method changes those invalid dates to another valid placeholder date.
         """
-        placeholder_date = datetime(1800, 1, 1).astimezone(timezone.utc).strftime("%Y-%m-%d 00:00:00")
+        placeholder_date = (
+            datetime(1800, 1, 1).astimezone(timezone.utc).strftime("%Y-%m-%d 00:00:00")
+        )
         update = BskyUserProfile.update(createdAt=placeholder_date).where(lookup_expression)
         updated_rows = update.execute()
         if updated_rows != 1:
-            raise Exception(f"fix_created_date({actor}, {field}) updated {updated_rows} rows, expected 1")
+            raise Exception(
+                f"fix_created_date({actor}, {field}) updated {updated_rows} rows, expected 1"
+            )
 
     @staticmethod
     def get_by_actor(actor):
