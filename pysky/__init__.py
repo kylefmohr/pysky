@@ -7,4 +7,4 @@ from pysky.posts.image import Image
 from pysky.posts.video import Video, IncompatibleMedia
 from pysky.posts.reply import Reply
 from pysky.posts.external import External
-from pysky.exceptions import APIError, NotAuthenticated, UploadException
+from pysky.exceptions import APIError, NotAuthenticated, UploadException, MediaException

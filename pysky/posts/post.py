@@ -48,6 +48,13 @@ class Post:
 
         type_map[type(obj)](obj)
 
+    def remove_media(self):
+        self.images = []
+        self.videos = []
+        if self.external:
+            self.external.image = None
+            self.external.thumb = None
+
     def add_external(self, external):
         self.external = external
 

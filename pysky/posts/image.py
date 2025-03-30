@@ -6,7 +6,7 @@ from PIL import Image as PILImage
 
 from pysky.logging import log
 from pysky.mimetype import guess_file_type
-
+from pysky.exceptions import MediaException
 
 THUMB_SIZES = [(n*128, n*128) for n in range(12, 0, -1)]
 
@@ -111,7 +111,11 @@ class Image:
         original_dimensions = image.size
 
         for ts in THUMB_SIZES:
-            image.thumbnail(ts)
+            try:
+                image.thumbnail(ts)
+            except Exception as e:
+                log.warning(f"failed to create image thumbnail {ts}: {e.__class__.__name__} - {e}")
+                continue
             image_data_out = io.BytesIO()
             image.save(image_data_out, format=image.format)
             image_data_out = image_data_out.getvalue()
@@ -120,6 +124,6 @@ class Image:
                 self.data = image_data_out
                 return original_dimensions, image.size
 
-        raise Exception(
+        raise MediaException(
             f"failed to resize image to an appropriate size ({original_length} -> {final_length})"
         )
