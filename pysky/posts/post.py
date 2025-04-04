@@ -23,11 +23,13 @@ class Post:
         reply_client_unique_key=None,
         reply_uri=None,
         convert_markdown=True,
+        langs=None,
     ):
         self.text = text or ""
         self.facets = []
         self.videos = []
         self.images = []
+        self.langs = langs
         self.external = None
         self.reply = reply
         self.reply_uri = reply_uri
@@ -100,6 +102,9 @@ class Post:
             "text": self.text or "",
             "createdAt": datetime.now(timezone.utc).isoformat(),
         }
+
+        if isinstance(self.langs, list):
+            post["langs"] = self.langs
 
         if self.reply:
             post["reply"] = self.reply.as_dict()
