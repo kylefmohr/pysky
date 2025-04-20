@@ -429,6 +429,17 @@ class BskyClient:
             hostname=HOSTNAME_CHAT, endpoint=endpoint, params={"cursor": cursor}, **kwargs
         )
 
+    @process_cursor
+    def get_author_feed(
+        self,
+        endpoint="xrpc/app.bsky.feed.getAuthorFeed",
+        cursor=None,
+        collection_attr="feed",
+        paginate=True,
+        **kwargs,
+    ):
+        return self.get(endpoint=endpoint, params={"cursor": cursor}, limit=100, **kwargs)
+
     @staticmethod
     def get_user_profile_static(actor):
         bsky = BskyClient()
