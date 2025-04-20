@@ -22,7 +22,7 @@ class Post:
         client_unique_key=None,
         reply_client_unique_key=None,
         reply_uri=None,
-        convert_markdown=True,
+        convert_markdown=False,
         langs=None,
     ):
         self.text = text or ""
@@ -35,8 +35,7 @@ class Post:
         self.reply_uri = reply_uri
         self.client_unique_key = client_unique_key
         self.reply_client_unique_key = reply_client_unique_key
-        if convert_markdown:
-            self.convert_markdown_text()
+        self.convert_markdown = convert_markdown
 
     def add(self, obj):
 
@@ -91,6 +90,9 @@ class Post:
 
         if not all(uploaded(obj) for obj in self.images + self.videos):
             raise Exception("must call Post.upload_files before posting")
+
+        if self.convert_markdown:
+            self.convert_markdown_text()
 
         if not self.reply and self.reply_client_unique_key:
             self.reply = Reply.from_client_unique_key(self.reply_client_unique_key)
