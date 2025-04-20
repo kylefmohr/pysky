@@ -74,7 +74,10 @@ bsky.create_post(post=pysky.Post("Hello"))
 
 
 # Create a post with a link using markdown
-post = pysky.Post("Click [here](https://bsky.app/) to go to Bluesky")
+post = pysky.Post(
+    "Click [here](https://bsky.app/) to go to Bluesky",
+    convert_markdown=True
+)
 bsky.create_post(post=post)
 
 
@@ -89,12 +92,15 @@ bsky.create_post(post=post)
 # as needed to stay within the 976.56KB size limit.
 #
 # Put the images after the text to avoid weird/unspecified formatting.
-post = pysky.Post("""Look at these 4 images:
+post = pysky.Post(
+    """Look at these 4 images:
 ![image 1 alt text](./image1.png)
 ![image 2 alt text](./image2.png)
 ![image 3 alt text](./image3.png)
 ![image 4 alt text](./image4.png)
-""")
+""",
+    convert_markdown=True
+)
 bsky.create_post(post=post)
 
 
