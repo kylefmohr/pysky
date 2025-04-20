@@ -52,6 +52,7 @@ class Reply:
             .where(
                 BskyPost.client_unique_key == client_unique_key,
             )
+            .order_by(APICallLog.id.desc())
             .first()
         )
         assert parent, "can't create a reply to an invalid parent"
