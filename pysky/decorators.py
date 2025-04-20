@@ -81,6 +81,9 @@ def combine_paginated_responses(responses, collection_attr="logs"):
 
 def call_with_pagination(client, func, **kwargs):
 
+    page_count = kwargs.pop("page_count", 20)
+    pages_received = 0
+
     assert "cursor" in kwargs, "called call_with_pagination without a cursor argument"
     responses = []
 
@@ -95,6 +98,10 @@ def call_with_pagination(client, func, **kwargs):
         try:
             new_cursor = getattr(response, "cursor", kwargs["cursor"])
             if new_cursor == kwargs["cursor"]:
+                break
+
+            pages_received += 1
+            if pages_received >= page_count:
                 break
 
             kwargs["cursor"] = new_cursor
