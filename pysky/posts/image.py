@@ -2,7 +2,7 @@ import io
 import os
 import math
 
-from PIL import Image as PILImage
+from PIL import Image as PILImage, PngImagePlugin
 
 from pysky.logging import log
 from pysky.mimetype import guess_file_type
@@ -13,6 +13,7 @@ THUMB_SIZES = [(n*128, n*128) for n in range(12, 0, -1)]
 # "This file is too large. It is 980.06KB but the maximum size is 976.56KB"
 MAX_ALLOWED_IMAGE_SIZE = math.floor(976.56 * 1024)
 
+PngImagePlugin.MAX_TEXT_CHUNK = 10 * (1024**2)
 
 class Image:
 
