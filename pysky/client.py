@@ -327,6 +327,18 @@ class BskyClient:
             hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.createRecord", params=params
         )
 
+    def put_record(self, collection, record, rkey):
+        params = {
+            "repo": self.did,
+            "collection": collection,
+            "record": record,
+            "validate": True,
+            "rkey": rkey,
+        }
+        return self.post(
+            hostname=HOSTNAME_ENTRYWAY, endpoint="xrpc/com.atproto.repo.putRecord", params=params
+        )
+
     def create_post(self, text=None, post=None, skip_uploads=False):
 
         if text and not post:
