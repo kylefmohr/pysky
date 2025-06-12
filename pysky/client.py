@@ -9,7 +9,7 @@ import peewee
 import requests
 
 from pysky.logging import log
-from pysky.session import Session
+from pysky.session import Session, ENDPOINT_SESSION_REFRESH
 from pysky.models import BaseModel, BskySession, BskyUserProfile, APICallLog, BskyPost
 from pysky.ratelimit import WRITE_OP_POINTS_MAP, check_write_ops_budget
 from pysky.bin.create_tables import create_non_existing_tables
@@ -109,12 +109,20 @@ class BskyClient:
         session_revoked = Session.is_revoked_token_response(r)
         session_expired = Session.is_expired_token_response(r)
 
+        # if the refresh token is expired, don't cause infinite recursion by refreshing it
+        if session_expired and ENDPOINT_SESSION_REFRESH in uri:
+            raise Exception("Session refresh failed")
+
         if session_revoked:
             log.info("session revoked, creating a new one")
             self.session.create(self)
         elif session_expired:
             log.info("session expired, refreshing the existing one")
-            self.session.refresh(self)
+            try:
+                self.session.refresh(self)
+            except Exception as e:
+                if "Session refresh failed" in str(e):
+                    self.session.create(self)
 
         if session_revoked or session_expired:
             args["headers"].update(self.auth_header)
