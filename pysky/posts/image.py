@@ -65,7 +65,6 @@ class Image:
             self.aspect_ratio = self.get_aspect_ratio()
         except Exception as e:
             self.aspect_ratio = None
-            log.warning(f"error finding image aspect ratio")
 
         return self.upload_response
 
