@@ -86,7 +86,7 @@ class Image:
             },
         }
 
-        if isinstance(self.aspect_ratio, tuple):
+        if isinstance(self.aspect_ratio, dict):
             image["aspectRatio"] = self.aspect_ratio
 
         return image
