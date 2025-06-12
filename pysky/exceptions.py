@@ -15,3 +15,9 @@ class UploadException(Exception):
 
 class MediaException(Exception):
     pass
+
+class SessionCreateException(Exception):
+    pass
+
+class SessionRefreshException(Exception):
+    pass

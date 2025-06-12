@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pysky.logging import log
 from pysky.models import BskySession
-from pysky.exceptions import APIError, NotAuthenticated
+from pysky.exceptions import APIError, NotAuthenticated, SessionCreateException, SessionRefreshException
 from pysky.constants import HOSTNAME_ENTRYWAY, AUTH_METHOD_PASSWORD
 
 SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
@@ -85,12 +85,20 @@ class Session:
                 auth_method=AUTH_METHOD_PASSWORD,
                 hostname=HOSTNAME_ENTRYWAY,
             )
+
+            if session.http.status_code != 200:
+                raise SessionCreateException(session.apilog.exception_str)
+
         elif method == SESSION_METHOD_REFRESH:
             session = client.post(
                 endpoint="xrpc/com.atproto.server.refreshSession",
                 use_refresh_token=True,
                 hostname=HOSTNAME_ENTRYWAY,
             )
+
+            if session.http.status_code != 200:
+                raise SessionRefreshException(session.apilog.exception_str)
+
         self.exception = None
         self.accessJwt = session.accessJwt
         self.refreshJwt = session.refreshJwt
