@@ -52,9 +52,3 @@ def check_write_ops_budget(did, hours, points_to_use, override_budget=None):
         raise RateLimitExceeded(
             f"This operation would meet or exceed write operations {hours}-hour budget: {budget_used}/{budget} points used"
         )
-
-    if budget_used > (0.95 * budget):
-        pctg = f"{(budget_used/budget):.2%}"
-        log.warning(
-            f"Over 95% of the {hours}-hour write ops budget has been used: {budget_used}/{budget} ({pctg})"
-        )
