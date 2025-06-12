@@ -110,6 +110,13 @@ class APICallLog(BaseModel):
     class Meta:
         table_name = "bsky_api_call_log"
 
+    @property
+    def exception_str(self):
+        if self.exception_class or self.exception_text:
+            return f"{self.exception_class} - {self.exception_text}"
+        else:
+            return self.exception_response
+
 
 class BskyPost(BaseModel):
     apilog = ForeignKeyField(APICallLog, unique=True)
