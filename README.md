@@ -14,6 +14,7 @@ Features:
     * Specify links and images in post text as Markdown without needing to provide facets
     * Reply to posts without needing to provide post refs
     * Wait for a post's video processing to finish before submitting the post (otherwise it would display an error)
+* Automated retry of transient HTTP 502/504 responses (retry is nearly always successful after a wait of few seconds)
 
 I created these features for my own projects with the goal of simplifying Bluesky integration and moved them into this library in case they could be useful to anyone else. This is a Bluesky library designed for common Bluesky use cases and not a general purpose atproto library such as [MarshalX/atproto](https://github.com/MarshalX/atproto).
 
