@@ -8,7 +8,8 @@ from pysky.exceptions import APIError, NotAuthenticated, SessionCreateException,
 from pysky.constants import HOSTNAME_ENTRYWAY, AUTH_METHOD_PASSWORD
 
 SESSION_METHOD_CREATE, SESSION_METHOD_REFRESH = range(2)
-
+ENDPOINT_SESSION_CREATE  = "xrpc/com.atproto.server.createSession"
+ENDPOINT_SESSION_REFRESH = "xrpc/com.atproto.server.refreshSession"
 
 class Session:
 
@@ -81,7 +82,7 @@ class Session:
                 )
 
             session = client.post(
-                endpoint="xrpc/com.atproto.server.createSession",
+                endpoint=ENDPOINT_SESSION_CREATE,
                 auth_method=AUTH_METHOD_PASSWORD,
                 hostname=HOSTNAME_ENTRYWAY,
             )
@@ -91,7 +92,7 @@ class Session:
 
         elif method == SESSION_METHOD_REFRESH:
             session = client.post(
-                endpoint="xrpc/com.atproto.server.refreshSession",
+                endpoint=ENDPOINT_SESSION_REFRESH,
                 use_refresh_token=True,
                 hostname=HOSTNAME_ENTRYWAY,
             )
