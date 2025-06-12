@@ -84,7 +84,11 @@ class BskyClient:
 
     def call_with_dns_retry(self, method, uri, args):
         try:
-            return method(uri, **args)
+            r = method(uri, **args)
+            if r.status_code in [502,504]:
+                sleep(5)
+                r = method(uri, **args)
+            return r
         except requests.exceptions.ConnectionError as e:
             if "Temporary failure in name resolution" in str(e):
                 log.warning(f"caught temporary dns error: {e}, retrying")
