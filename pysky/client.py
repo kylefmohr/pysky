@@ -65,6 +65,8 @@ class BskyClient:
             ), "peewee_db argument must be a subclass of peewee.Database"
             for subclass in [BaseModel] + BaseModel.__subclasses__():
                 subclass._meta.set_database(peewee_db)
+        
+        create_non_existing_tables(BskySession._meta.database)
 
     @property
     def auth_header(self):

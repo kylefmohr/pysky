@@ -20,7 +20,8 @@ def create_non_existing_tables(db):
     ]
 
     if not missing_table_model_classes:
-        print("All tables already exist.")
+        #print("All tables already exist.")
+        pass #removed print because this function is automatically called on initialization now
     else:
         print(
             f"Creating missing tables: {', '.join(str(cls._meta.table_name) for n,cls in missing_table_model_classes)}"
