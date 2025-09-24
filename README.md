@@ -373,10 +373,10 @@ See: https://docs.bsky.app/docs/advanced-guides/service-auth
 
 1. Clone the repo, add it to PYTHONPATH, pip install -r requirements.txt
 
-2. Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
+2. (Optional) Set up a database connection. PostgreSQL and SQLite work, but other databases supported by the Peewee ORM should also work.
 
     * PostgreSQL: If the official PostgreSQL environment variables are set: (PGUSER, PGHOST, PGDATABASE, PGPASSWORD, optionally PGPORT) then that database will be used.
-    * SQLite: If those aren't set, the SQLite database `$BSKY_SQLITE_FILENAME` will be used. If that isn't set then ":memory:" will be used, an ephemeral in-memory database.
+    * SQLite: If those aren't set, the SQLite database `$BSKY_SQLITE_FILENAME` will be used. If that isn't set then a default filename of `pysky.db` in the current working directory will be used.
     * Alternatively, you can instantiate a Peewee database object yourself and pass it to the BskyClient constructor as `peewee_db` to override any database environment variables.
 
 3. Create database tables: run `./pysky/bin/create_tables.py`

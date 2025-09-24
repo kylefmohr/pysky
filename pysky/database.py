@@ -28,7 +28,7 @@ def get_db_postgresql():
 
 
 def get_db_sqlite():
-    sqlite_filename = os.getenv("BSKY_SQLITE_FILENAME", ":memory:")
+    sqlite_filename = os.getenv("BSKY_SQLITE_FILENAME", "pysky.db")
     return SqliteDatabase(sqlite_filename)
 
 
