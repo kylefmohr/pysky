@@ -171,6 +171,5 @@ cython_debug/
 .pypirc
 .python-version
 main.py
-pyproject.toml
 pysky.db
 uv.lock

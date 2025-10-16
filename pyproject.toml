@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pysky"
+version = "0.1.0"
+authors = [
+  { name="Todd Federman" },
+]
+description = "A Bluesky API library"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "beautifulsoup4==4.13.3",
+    "bs4==0.0.2",
+    "certifi==2025.1.31",
+    "charset-normalizer==3.4.1",
+    "ffmpeg-python==0.2.0",
+    "future==1.0.0",
+    "idna==3.10",
+    "Markdown==3.7",
+    "packaging==24.2",
+    "peewee==3.17.9",
+    "pillow==11.1.0",
+    "psycopg2-binary==2.9.10",
+    "requests==2.32.4",
+    "soupsieve==2.6",
+    "typing_extensions==4.12.2",
+    "urllib3==2.3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/tfederman/pysky"
+Issues = "https://github.com/tfederman/pysky/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pysky*"]
